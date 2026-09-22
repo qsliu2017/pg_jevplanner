@@ -1,0 +1,111 @@
+Query 10c: 10c.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(chn.name) AS character,
+       MIN(t.title) AS movie_with_american_producer
+FROM char_name AS chn,
+     cast_info AS ci,
+     company_name AS cn,
+     company_type AS ct,
+     movie_companies AS mc,
+     role_type AS rt,
+     title AS t
+WHERE ci.note LIKE '%(producer)%'
+  AND cn.country_code = '[us]'
+  AND t.production_year > 1990
+  AND t.id = mc.movie_id
+  AND t.id = ci.movie_id
+  AND ci.movie_id = mc.movie_id
+  AND chn.id = ci.person_role_id
+  AND rt.id = ci.role_id
+  AND cn.id = mc.company_id
+  AND ct.id = mc.company_type_id;
+
+Aggregate  (cost=2773.16..2773.17 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(chn.name), min(t.title)
+  Buffers: shared hit=943
+  ->  Hash Join  (cost=1280.89..2770.43 rows=547 width=31) (actual rows=0.00 loops=1)
+        Output: chn.name, t.title
+        Inner Unique: true
+        Hash Cond: (ci.person_role_id = chn.id)
+        Buffers: shared hit=943
+        ->  Hash Join  (cost=525.30..2011.86 rows=1134 width=21) (actual rows=1341.00 loops=1)
+              Output: t.title, ci.person_role_id
+              Inner Unique: true
+              Hash Cond: (mc.movie_id = t.id)
+              Buffers: shared hit=691
+              ->  Hash Join  (cost=249.57..1731.95 rows=1594 width=12) (actual rows=2165.00 loops=1)
+                    Output: ci.movie_id, ci.person_role_id, mc.movie_id
+                    Hash Cond: (ci.movie_id = mc.movie_id)
+                    Buffers: shared hit=580
+                    ->  Hash Join  (cost=1.27..1409.87 rows=2722 width=8) (actual rows=2790.00 loops=1)
+                          Output: ci.movie_id, ci.person_role_id
+                          Inner Unique: true
+                          Hash Cond: (ci.role_id = rt.id)
+                          Buffers: shared hit=501
+                          ->  Seq Scan on public.cast_info ci  (cost=0.00..1398.93 rows=2722 width=12) (actual rows=2790.00 loops=1)
+                                Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                Filter: (ci.note ~~ '%(producer)%'::text)
+                                Rows Removed by Filter: 69124
+                                Buffers: shared hit=500
+                          ->  Hash  (cost=1.12..1.12 rows=12 width=4) (actual rows=12.00 loops=1)
+                                Output: rt.id
+                                Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                Buffers: shared hit=1
+                                ->  Seq Scan on public.role_type rt  (cost=0.00..1.12 rows=12 width=4) (actual rows=12.00 loops=1)
+                                      Output: rt.id
+                                      Buffers: shared hit=1
+                    ->  Hash  (cost=224.76..224.76 rows=1883 width=4) (actual rows=2194.00 loops=1)
+                          Output: mc.movie_id
+                          Buckets: 4096 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 110kB
+                          Buffers: shared hit=79
+                          ->  Hash Join  (cost=95.39..224.76 rows=1883 width=4) (actual rows=2194.00 loops=1)
+                                Output: mc.movie_id
+                                Inner Unique: true
+                                Hash Cond: (mc.company_id = cn.id)
+                                Buffers: shared hit=79
+                                ->  Hash Join  (cost=1.09..117.00 rows=5122 width=8) (actual rows=5122.00 loops=1)
+                                      Output: mc.movie_id, mc.company_id
+                                      Inner Unique: true
+                                      Hash Cond: (mc.company_type_id = ct.id)
+                                      Buffers: shared hit=38
+                                      ->  Seq Scan on public.movie_companies mc  (cost=0.00..88.22 rows=5122 width=12) (actual rows=5122.00 loops=1)
+                                            Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                            Buffers: shared hit=37
+                                      ->  Hash  (cost=1.04..1.04 rows=4 width=4) (actual rows=4.00 loops=1)
+                                            Output: ct.id
+                                            Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                            Buffers: shared hit=1
+                                            ->  Seq Scan on public.company_type ct  (cost=0.00..1.04 rows=4 width=4) (actual rows=4.00 loops=1)
+                                                  Output: ct.id
+                                                  Buffers: shared hit=1
+                                ->  Hash  (cost=79.97..79.97 rows=1146 width=4) (actual rows=1146.00 loops=1)
+                                      Output: cn.id
+                                      Buckets: 2048  Batches: 1  Memory Usage: 57kB
+                                      Buffers: shared hit=41
+                                      ->  Seq Scan on public.company_name cn  (cost=0.00..79.97 rows=1146 width=4) (actual rows=1146.00 loops=1)
+                                            Output: cn.id
+                                            Filter: ((cn.country_code)::text = '[us]'::text)
+                                            Rows Removed by Filter: 1972
+                                            Buffers: shared hit=41
+              ->  Hash  (cost=207.25..207.25 rows=5478 width=21) (actual rows=5478.00 loops=1)
+                    Output: t.title, t.id
+                    Buckets: 8192  Batches: 1  Memory Usage: 357kB
+                    Buffers: shared hit=111
+                    ->  Seq Scan on public.title t  (cost=0.00..207.25 rows=5478 width=21) (actual rows=5478.00 loops=1)
+                          Output: t.title, t.id
+                          Filter: (t.production_year > 1990)
+                          Rows Removed by Filter: 2222
+                          Buffers: shared hit=111
+        ->  Hash  (cost=475.82..475.82 rows=22382 width=18) (actual rows=22382.00 loops=1)
+              Output: chn.name, chn.id
+              Buckets: 32768  Batches: 1  Memory Usage: 1386kB
+              Buffers: shared hit=252
+              ->  Seq Scan on public.char_name chn  (cost=0.00..475.82 rows=22382 width=18) (actual rows=22382.00 loops=1)
+                    Output: chn.name, chn.id
+                    Buffers: shared hit=252
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=66
+Planning Time: 3363.379 ms
+Execution Time: 18.250 ms

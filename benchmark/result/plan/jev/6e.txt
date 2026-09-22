@@ -1,0 +1,68 @@
+Query 6e: 6e.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(k.keyword) AS movie_keyword,
+       MIN(n.name) AS actor_name,
+       MIN(t.title) AS marvel_movie
+FROM cast_info AS ci,
+     keyword AS k,
+     movie_keyword AS mk,
+     name AS n,
+     title AS t
+WHERE k.keyword = 'marvel-cinematic-universe'
+  AND n.name LIKE '%Downey%Robert%'
+  AND t.production_year > 2000
+  AND k.id = mk.keyword_id
+  AND t.id = mk.movie_id
+  AND t.id = ci.movie_id
+  AND ci.movie_id = mk.movie_id
+  AND n.id = ci.person_id;
+
+Aggregate  (cost=104.85..104.86 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(k.keyword), min(n.name), min(t.title)
+  Buffers: shared hit=31
+  ->  Nested Loop  (cost=5.17..104.84 rows=1 width=44) (actual rows=0.00 loops=1)
+        Output: k.keyword, n.name, t.title
+        Inner Unique: true
+        Buffers: shared hit=31
+        ->  Nested Loop  (cost=4.88..101.55 rows=9 width=33) (actual rows=0.00 loops=1)
+              Output: ci.person_id, t.title, k.keyword
+              Join Filter: (ci.movie_id = t.id)
+              Buffers: shared hit=31
+              ->  Nested Loop  (cost=4.58..100.48 rows=1 width=37) (actual rows=0.00 loops=1)
+                    Output: t.title, t.id, k.keyword, mk.movie_id
+                    Inner Unique: true
+                    Buffers: shared hit=31
+                    ->  Nested Loop  (cost=4.30..99.75 rows=2 width=16) (actual rows=0.00 loops=1)
+                          Output: k.keyword, mk.movie_id
+                          Buffers: shared hit=31
+                          ->  Seq Scan on public.keyword k  (cost=0.00..88.62 rows=1 width=16) (actual rows=0.00 loops=1)
+                                Output: k.id, k.keyword, k.phonetic_code
+                                Filter: (k.keyword = 'marvel-cinematic-universe'::text)
+                                Rows Removed by Filter: 4610
+                                Buffers: shared hit=31
+                          ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (never executed)
+                                Output: mk.id, mk.movie_id, mk.keyword_id
+                                Recheck Cond: (k.id = mk.keyword_id)
+                                ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (never executed)
+                                      Index Cond: (mk.keyword_id = k.id)
+                                      Index Searches: 0
+                    ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.37 rows=1 width=21) (never executed)
+                          Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                          Index Cond: (t.id = mk.movie_id)
+                          Filter: (t.production_year > 2000)
+                          Index Searches: 0
+              ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..0.86 rows=17 width=8) (never executed)
+                    Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                    Index Cond: (ci.movie_id = mk.movie_id)
+                    Index Searches: 0
+        ->  Index Scan using name_pkey on public.name n  (cost=0.29..0.36 rows=1 width=19) (never executed)
+              Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+              Index Cond: (n.id = ci.person_id)
+              Filter: (n.name ~~ '%Downey%Robert%'::text)
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=60
+Planning Time: 3421.617 ms
+Execution Time: 0.286 ms

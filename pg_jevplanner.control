@@ -1,0 +1,5 @@
+comment = 'Experimental JEV inner-join ordering with native PostgreSQL physical planning'
+default_version = '0.1.0'
+module_pathname = '$libdir/pg_jevplanner'
+relocatable = true
+superuser = true

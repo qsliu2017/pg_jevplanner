@@ -1,0 +1,69 @@
+Query 4b: 4b.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(mi_idx.info) AS rating,
+       MIN(t.title) AS movie_title
+FROM info_type AS it,
+     keyword AS k,
+     movie_info_idx AS mi_idx,
+     movie_keyword AS mk,
+     title AS t
+WHERE it.info ='rating'
+  AND k.keyword LIKE '%sequel%'
+  AND mi_idx.info > '9.0'
+  AND t.production_year > 2010
+  AND t.id = mi_idx.movie_id
+  AND t.id = mk.movie_id
+  AND mk.movie_id = mi_idx.movie_id
+  AND k.id = mk.keyword_id
+  AND it.id = mi_idx.info_type_id;
+
+Aggregate  (cost=189.51..189.52 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(mi_idx.info), min(t.title)
+  Buffers: shared hit=74
+  ->  Nested Loop  (cost=0.85..189.51 rows=1 width=22) (actual rows=0.00 loops=1)
+        Output: mi_idx.info, t.title
+        Join Filter: (it.id = mi_idx.info_type_id)
+        Buffers: shared hit=74
+        ->  Seq Scan on public.info_type it  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+              Output: it.id, it.info
+              Filter: ((it.info)::text = 'rating'::text)
+              Rows Removed by Filter: 112
+              Buffers: shared hit=1
+        ->  Nested Loop  (cost=0.85..187.08 rows=1 width=26) (actual rows=0.00 loops=1)
+              Output: mi_idx.info, mi_idx.info_type_id, t.title
+              Inner Unique: true
+              Buffers: shared hit=73
+              ->  Nested Loop  (cost=0.57..186.07 rows=3 width=30) (actual rows=0.00 loops=1)
+                    Output: mk.keyword_id, mi_idx.info, mi_idx.info_type_id, t.title
+                    Buffers: shared hit=73
+                    ->  Nested Loop  (cost=0.28..183.77 rows=3 width=34) (actual rows=0.00 loops=1)
+                          Output: mi_idx.info, mi_idx.movie_id, mi_idx.info_type_id, t.title, t.id
+                          Inner Unique: true
+                          Buffers: shared hit=73
+                          ->  Seq Scan on public.movie_info_idx mi_idx  (cost=0.00..50.01 rows=19 width=13) (actual rows=19.00 loops=1)
+                                Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                                Filter: (mi_idx.info > '9.0'::text)
+                                Rows Removed by Filter: 2702
+                                Buffers: shared hit=16
+                          ->  Index Scan using title_pkey on public.title t  (cost=0.28..7.04 rows=1 width=21) (actual rows=0.00 loops=19)
+                                Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                Index Cond: (t.id = mi_idx.movie_id)
+                                Filter: (t.production_year > 2010)
+                                Rows Removed by Filter: 1
+                                Index Searches: 19
+                                Buffers: shared hit=57
+                    ->  Index Scan using movie_id_movie_keyword on public.movie_keyword mk  (cost=0.29..0.68 rows=9 width=8) (never executed)
+                          Output: mk.id, mk.movie_id, mk.keyword_id
+                          Index Cond: (mk.movie_id = t.id)
+                          Index Searches: 0
+              ->  Index Scan using keyword_pkey on public.keyword k  (cost=0.28..0.32 rows=1 width=4) (never executed)
+                    Output: k.id, k.keyword, k.phonetic_code
+                    Index Cond: (k.id = mk.keyword_id)
+                    Filter: (k.keyword ~~ '%sequel%'::text)
+                    Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=48
+Planning Time: 2030.504 ms
+Execution Time: 0.282 ms

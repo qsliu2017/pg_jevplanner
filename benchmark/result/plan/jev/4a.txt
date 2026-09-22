@@ -1,0 +1,75 @@
+Query 4a: 4a.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(mi_idx.info) AS rating,
+       MIN(t.title) AS movie_title
+FROM info_type AS it,
+     keyword AS k,
+     movie_info_idx AS mi_idx,
+     movie_keyword AS mk,
+     title AS t
+WHERE it.info ='rating'
+  AND k.keyword LIKE '%sequel%'
+  AND mi_idx.info > '5.0'
+  AND t.production_year > 2005
+  AND t.id = mi_idx.movie_id
+  AND t.id = mk.movie_id
+  AND mk.movie_id = mi_idx.movie_id
+  AND k.id = mk.keyword_id
+  AND it.id = mi_idx.info_type_id;
+
+Aggregate  (cost=101.05..101.06 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(mi_idx.info), min(t.title)
+  Buffers: shared hit=124
+  ->  Nested Loop  (cost=5.01..101.05 rows=1 width=22) (actual rows=0.00 loops=1)
+        Output: mi_idx.info, t.title
+        Inner Unique: true
+        Buffers: shared hit=124
+        ->  Nested Loop  (cost=4.86..100.84 rows=1 width=26) (actual rows=0.00 loops=1)
+              Output: mi_idx.info, mi_idx.info_type_id, t.title
+              Join Filter: (mi_idx.movie_id = t.id)
+              Buffers: shared hit=124
+              ->  Nested Loop  (cost=4.58..100.48 rows=1 width=25) (actual rows=3.00 loops=1)
+                    Output: t.title, t.id, mk.movie_id
+                    Inner Unique: true
+                    Buffers: shared hit=118
+                    ->  Nested Loop  (cost=4.30..99.75 rows=2 width=4) (actual rows=22.00 loops=1)
+                          Output: mk.movie_id
+                          Buffers: shared hit=52
+                          ->  Seq Scan on public.keyword k  (cost=0.00..88.62 rows=1 width=4) (actual rows=2.00 loops=1)
+                                Output: k.id, k.keyword, k.phonetic_code
+                                Filter: (k.keyword ~~ '%sequel%'::text)
+                                Rows Removed by Filter: 4608
+                                Buffers: shared hit=31
+                          ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (actual rows=11.00 loops=2)
+                                Output: mk.id, mk.movie_id, mk.keyword_id
+                                Recheck Cond: (k.id = mk.keyword_id)
+                                Heap Blocks: exact=17
+                                Buffers: shared hit=21
+                                ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (actual rows=11.00 loops=2)
+                                      Index Cond: (mk.keyword_id = k.id)
+                                      Index Searches: 2
+                                      Buffers: shared hit=4
+                    ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.37 rows=1 width=21) (actual rows=0.14 loops=22)
+                          Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                          Index Cond: (t.id = mk.movie_id)
+                          Filter: (t.production_year > 2005)
+                          Rows Removed by Filter: 1
+                          Index Searches: 22
+                          Buffers: shared hit=66
+              ->  Index Scan using movie_id_movie_info_idx on public.movie_info_idx mi_idx  (cost=0.28..0.35 rows=1 width=13) (actual rows=0.00 loops=3)
+                    Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                    Index Cond: (mi_idx.movie_id = mk.movie_id)
+                    Filter: (mi_idx.info > '5.0'::text)
+                    Index Searches: 3
+                    Buffers: shared hit=6
+        ->  Index Scan using info_type_pkey on public.info_type it  (cost=0.14..0.17 rows=1 width=4) (never executed)
+              Output: it.id, it.info
+              Index Cond: (it.id = mi_idx.info_type_id)
+              Filter: ((it.info)::text = 'rating'::text)
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=59
+Planning Time: 2089.616 ms
+Execution Time: 0.620 ms

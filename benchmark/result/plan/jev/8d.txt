@@ -1,0 +1,100 @@
+Query 8d: 8d.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(an1.name) AS costume_designer_pseudo,
+       MIN(t.title) AS movie_with_costumes
+FROM aka_name AS an1,
+     cast_info AS ci,
+     company_name AS cn,
+     movie_companies AS mc,
+     name AS n1,
+     role_type AS rt,
+     title AS t
+WHERE cn.country_code ='[us]'
+  AND rt.role ='costume designer'
+  AND an1.person_id = n1.id
+  AND n1.id = ci.person_id
+  AND ci.movie_id = t.id
+  AND t.id = mc.movie_id
+  AND mc.company_id = cn.id
+  AND ci.role_id = rt.id
+  AND an1.person_id = ci.person_id
+  AND ci.movie_id = mc.movie_id;
+
+Aggregate  (cost=3400.68..3400.69 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(an1.name), min(t.title)
+  Buffers: shared hit=3057
+  ->  Nested Loop  (cost=708.28..3385.24 rows=3087 width=33) (actual rows=696.00 loops=1)
+        Output: an1.name, t.title
+        Join Filter: (an1.person_id = n1.id)
+        Buffers: shared hit=3057
+        ->  Nested Loop  (cost=707.99..2006.22 rows=3510 width=25) (actual rows=617.00 loops=1)
+              Output: n1.id, t.title, ci.person_id
+              Inner Unique: true
+              Buffers: shared hit=1432
+              ->  Hash Join  (cost=707.70..891.36 rows=3510 width=21) (actual rows=617.00 loops=1)
+                    Output: t.title, ci.person_id
+                    Inner Unique: true
+                    Hash Cond: (ci.movie_id = t.id)
+                    Buffers: shared hit=197
+                    ->  Hash Join  (cost=423.45..597.90 rows=3510 width=12) (actual rows=617.00 loops=1)
+                          Output: ci.person_id, ci.movie_id, mc.movie_id
+                          Hash Cond: (mc.movie_id = ci.movie_id)
+                          Buffers: shared hit=86
+                          ->  Hash Join  (cost=94.30..195.99 rows=1883 width=4) (actual rows=2194.00 loops=1)
+                                Output: mc.movie_id
+                                Inner Unique: true
+                                Hash Cond: (mc.company_id = cn.id)
+                                Buffers: shared hit=78
+                                ->  Seq Scan on public.movie_companies mc  (cost=0.00..88.22 rows=5122 width=8) (actual rows=5122.00 loops=1)
+                                      Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                      Buffers: shared hit=37
+                                ->  Hash  (cost=79.97..79.97 rows=1146 width=4) (actual rows=1146.00 loops=1)
+                                      Output: cn.id
+                                      Buckets: 2048  Batches: 1  Memory Usage: 57kB
+                                      Buffers: shared hit=41
+                                      ->  Seq Scan on public.company_name cn  (cost=0.00..79.97 rows=1146 width=4) (actual rows=1146.00 loops=1)
+                                            Output: cn.id
+                                            Filter: ((cn.country_code)::text = '[us]'::text)
+                                            Rows Removed by Filter: 1972
+                                            Buffers: shared hit=41
+                          ->  Hash  (cost=254.24..254.24 rows=5993 width=8) (actual rows=575.00 loops=1)
+                                Output: ci.person_id, ci.movie_id
+                                Buckets: 8192  Batches: 1  Memory Usage: 87kB
+                                Buffers: shared hit=8
+                                ->  Nested Loop  (cost=0.29..254.24 rows=5993 width=8) (actual rows=575.00 loops=1)
+                                      Output: ci.person_id, ci.movie_id
+                                      Buffers: shared hit=8
+                                      ->  Seq Scan on public.role_type rt  (cost=0.00..1.15 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: rt.id, rt.role
+                                            Filter: ((rt.role)::text = 'costume designer'::text)
+                                            Rows Removed by Filter: 11
+                                            Buffers: shared hit=1
+                                      ->  Index Scan using role_id_cast_info on public.cast_info ci  (cost=0.29..187.71 rows=6538 width=12) (actual rows=575.00 loops=1)
+                                            Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                            Index Cond: (ci.role_id = rt.id)
+                                            Index Searches: 1
+                                            Buffers: shared hit=7
+                    ->  Hash  (cost=188.00..188.00 rows=7700 width=21) (actual rows=7700.00 loops=1)
+                          Output: t.title, t.id
+                          Buckets: 8192  Batches: 1  Memory Usage: 476kB
+                          Buffers: shared hit=111
+                          ->  Seq Scan on public.title t  (cost=0.00..188.00 rows=7700 width=21) (actual rows=7700.00 loops=1)
+                                Output: t.title, t.id
+                                Buffers: shared hit=111
+              ->  Index Only Scan using name_pkey on public.name n1  (cost=0.29..0.32 rows=1 width=4) (actual rows=1.00 loops=617)
+                    Output: n1.id
+                    Index Cond: (n1.id = ci.person_id)
+                    Heap Fetches: 0
+                    Index Searches: 617
+                    Buffers: shared hit=1235
+        ->  Index Scan using person_id_aka_name on public.aka_name an1  (cost=0.29..0.37 rows=2 width=20) (actual rows=1.13 loops=617)
+              Output: an1.id, an1.person_id, an1.name, an1.imdb_index, an1.name_pcode_cf, an1.name_pcode_nf, an1.surname_pcode, an1.md5sum
+              Index Cond: (an1.person_id = ci.person_id)
+              Index Searches: 617
+              Buffers: shared hit=1625
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=88
+Planning Time: 3751.041 ms
+Execution Time: 5.270 ms

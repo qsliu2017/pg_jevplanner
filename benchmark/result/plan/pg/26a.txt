@@ -1,0 +1,186 @@
+Query 26a: 26a.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(chn.name) AS character_name,
+       MIN(mi_idx.info) AS rating,
+       MIN(n.name) AS playing_actor,
+       MIN(t.title) AS complete_hero_movie
+FROM complete_cast AS cc,
+     comp_cast_type AS cct1,
+     comp_cast_type AS cct2,
+     char_name AS chn,
+     cast_info AS ci,
+     info_type AS it2,
+     keyword AS k,
+     kind_type AS kt,
+     movie_info_idx AS mi_idx,
+     movie_keyword AS mk,
+     name AS n,
+     title AS t
+WHERE cct1.kind = 'cast'
+  AND cct2.kind LIKE '%complete%'
+  AND chn.name IS NOT NULL
+  AND (chn.name LIKE '%man%'
+       OR chn.name LIKE '%Man%')
+  AND it2.info = 'rating'
+  AND k.keyword IN ('superhero',
+                    'marvel-comics',
+                    'based-on-comic',
+                    'tv-special',
+                    'fight',
+                    'violence',
+                    'magnet',
+                    'web',
+                    'claw',
+                    'laser')
+  AND kt.kind = 'movie'
+  AND mi_idx.info > '7.0'
+  AND t.production_year > 2000
+  AND kt.id = t.kind_id
+  AND t.id = mk.movie_id
+  AND t.id = ci.movie_id
+  AND t.id = cc.movie_id
+  AND t.id = mi_idx.movie_id
+  AND mk.movie_id = ci.movie_id
+  AND mk.movie_id = cc.movie_id
+  AND mk.movie_id = mi_idx.movie_id
+  AND ci.movie_id = cc.movie_id
+  AND ci.movie_id = mi_idx.movie_id
+  AND cc.movie_id = mi_idx.movie_id
+  AND chn.id = ci.person_role_id
+  AND n.id = ci.person_id
+  AND k.id = mk.keyword_id
+  AND cct1.id = cc.subject_id
+  AND cct2.id = cc.status_id
+  AND it2.id = mi_idx.info_type_id;
+
+Aggregate  (cost=25.47..25.48 rows=1 width=128) (actual rows=1.00 loops=1)
+  Output: min(chn.name), min(mi_idx.info), min(n.name), min(t.title)
+  Buffers: shared hit=593
+  ->  Nested Loop  (cost=4.43..25.46 rows=1 width=51) (actual rows=0.00 loops=1)
+        Output: chn.name, mi_idx.info, n.name, t.title
+        Inner Unique: true
+        Buffers: shared hit=593
+        ->  Nested Loop  (cost=4.14..25.10 rows=1 width=40) (actual rows=0.00 loops=1)
+              Output: ci.person_id, chn.name, mi_idx.info, t.title
+              Inner Unique: true
+              Buffers: shared hit=593
+              ->  Nested Loop  (cost=3.84..24.74 rows=1 width=44) (actual rows=0.00 loops=1)
+                    Output: ci.person_id, chn.name, mi_idx.info, mk.keyword_id, t.title
+                    Inner Unique: true
+                    Buffers: shared hit=593
+                    ->  Nested Loop  (cost=3.55..24.41 rows=1 width=34) (actual rows=0.00 loops=1)
+                          Output: ci.person_role_id, ci.person_id, mi_idx.info, mk.keyword_id, t.title
+                          Join Filter: (ci.movie_id = t.id)
+                          Buffers: shared hit=593
+                          ->  Nested Loop  (cost=3.26..23.34 rows=1 width=42) (actual rows=0.00 loops=1)
+                                Output: cc.movie_id, mi_idx.info, mi_idx.movie_id, mk.movie_id, mk.keyword_id, t.title, t.id
+                                Buffers: shared hit=593
+                                ->  Nested Loop  (cost=2.97..22.75 rows=1 width=34) (actual rows=0.00 loops=1)
+                                      Output: cc.movie_id, mi_idx.info, mi_idx.movie_id, t.title, t.id
+                                      Inner Unique: true
+                                      Buffers: shared hit=593
+                                      ->  Nested Loop  (cost=2.84..22.57 rows=1 width=38) (actual rows=10.00 loops=1)
+                                            Output: cc.movie_id, mi_idx.info, mi_idx.movie_id, t.title, t.kind_id, t.id
+                                            Inner Unique: true
+                                            Join Filter: (cc.movie_id = t.id)
+                                            Buffers: shared hit=573
+                                            ->  Nested Loop  (cost=2.56..20.89 rows=1 width=13) (actual rows=37.00 loops=1)
+                                                  Output: cc.movie_id, mi_idx.info, mi_idx.movie_id
+                                                  Inner Unique: true
+                                                  Buffers: shared hit=462
+                                                  ->  Nested Loop  (cost=2.41..20.03 rows=7 width=17) (actual rows=53.00 loops=1)
+                                                        Output: cc.movie_id, mi_idx.info, mi_idx.movie_id, mi_idx.info_type_id
+                                                        Buffers: shared hit=458
+                                                        ->  Hash Join  (cost=2.12..8.40 rows=16 width=4) (actual rows=169.00 loops=1)
+                                                              Output: cc.movie_id
+                                                              Inner Unique: true
+                                                              Hash Cond: (cc.status_id = cct2.id)
+                                                              Buffers: shared hit=4
+                                                              ->  Hash Join  (cost=1.06..6.99 rows=64 width=8) (actual rows=169.00 loops=1)
+                                                                    Output: cc.movie_id, cc.status_id
+                                                                    Inner Unique: true
+                                                                    Hash Cond: (cc.subject_id = cct1.id)
+                                                                    Buffers: shared hit=3
+                                                                    ->  Seq Scan on public.complete_cast cc  (cost=0.00..4.55 rows=255 width=12) (actual rows=255.00 loops=1)
+                                                                          Output: cc.id, cc.movie_id, cc.subject_id, cc.status_id
+                                                                          Buffers: shared hit=2
+                                                                    ->  Hash  (cost=1.05..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                                                          Output: cct1.id
+                                                                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                          Buffers: shared hit=1
+                                                                          ->  Seq Scan on public.comp_cast_type cct1  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                                                                Output: cct1.id
+                                                                                Filter: ((cct1.kind)::text = 'cast'::text)
+                                                                                Rows Removed by Filter: 3
+                                                                                Buffers: shared hit=1
+                                                              ->  Hash  (cost=1.05..1.05 rows=1 width=4) (actual rows=2.00 loops=1)
+                                                                    Output: cct2.id
+                                                                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                    Buffers: shared hit=1
+                                                                    ->  Seq Scan on public.comp_cast_type cct2  (cost=0.00..1.05 rows=1 width=4) (actual rows=2.00 loops=1)
+                                                                          Output: cct2.id
+                                                                          Filter: ((cct2.kind)::text ~~ '%complete%'::text)
+                                                                          Rows Removed by Filter: 2
+                                                                          Buffers: shared hit=1
+                                                        ->  Index Scan using movie_id_movie_info_idx on public.movie_info_idx mi_idx  (cost=0.28..0.72 rows=1 width=13) (actual rows=0.31 loops=169)
+                                                              Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                                                              Index Cond: (mi_idx.movie_id = cc.movie_id)
+                                                              Filter: (mi_idx.info > '7.0'::text)
+                                                              Rows Removed by Filter: 2
+                                                              Index Searches: 169
+                                                              Buffers: shared hit=454
+                                                  ->  Memoize  (cost=0.15..0.20 rows=1 width=4) (actual rows=0.70 loops=53)
+                                                        Output: it2.id
+                                                        Cache Key: mi_idx.info_type_id
+                                                        Cache Mode: logical
+                                                        Hits: 51  Misses: 2  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+                                                        Buffers: shared hit=4
+                                                        ->  Index Scan using info_type_pkey on public.info_type it2  (cost=0.14..0.19 rows=1 width=4) (actual rows=0.50 loops=2)
+                                                              Output: it2.id
+                                                              Index Cond: (it2.id = mi_idx.info_type_id)
+                                                              Filter: ((it2.info)::text = 'rating'::text)
+                                                              Rows Removed by Filter: 0
+                                                              Index Searches: 2
+                                                              Buffers: shared hit=4
+                                            ->  Index Scan using title_pkey on public.title t  (cost=0.28..1.67 rows=1 width=25) (actual rows=0.27 loops=37)
+                                                  Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                                  Index Cond: (t.id = mi_idx.movie_id)
+                                                  Filter: (t.production_year > 2000)
+                                                  Rows Removed by Filter: 1
+                                                  Index Searches: 37
+                                                  Buffers: shared hit=111
+                                      ->  Index Scan using kind_type_pkey on public.kind_type kt  (cost=0.13..0.16 rows=1 width=4) (actual rows=0.00 loops=10)
+                                            Output: kt.id, kt.kind
+                                            Index Cond: (kt.id = t.kind_id)
+                                            Filter: ((kt.kind)::text = 'movie'::text)
+                                            Rows Removed by Filter: 1
+                                            Index Searches: 10
+                                            Buffers: shared hit=20
+                                ->  Index Scan using movie_id_movie_keyword on public.movie_keyword mk  (cost=0.29..0.50 rows=9 width=8) (never executed)
+                                      Output: mk.id, mk.movie_id, mk.keyword_id
+                                      Index Cond: (mk.movie_id = t.id)
+                                      Index Searches: 0
+                          ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..0.86 rows=17 width=12) (never executed)
+                                Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                Index Cond: (ci.movie_id = mk.movie_id)
+                                Index Searches: 0
+                    ->  Index Scan using char_name_pkey on public.char_name chn  (cost=0.29..0.33 rows=1 width=18) (never executed)
+                          Output: chn.id, chn.name, chn.imdb_index, chn.imdb_id, chn.name_pcode_nf, chn.surname_pcode, chn.md5sum
+                          Index Cond: (chn.id = ci.person_role_id)
+                          Filter: ((chn.name ~~ '%man%'::text) OR (chn.name ~~ '%Man%'::text))
+                          Index Searches: 0
+              ->  Index Scan using keyword_pkey on public.keyword k  (cost=0.31..0.35 rows=1 width=4) (never executed)
+                    Output: k.id, k.keyword, k.phonetic_code
+                    Index Cond: (k.id = mk.keyword_id)
+                    Filter: (k.keyword = ANY ('{superhero,marvel-comics,based-on-comic,tv-special,fight,violence,magnet,web,claw,laser}'::text[]))
+                    Index Searches: 0
+        ->  Index Scan using name_pkey on public.name n  (cost=0.29..0.36 rows=1 width=19) (never executed)
+              Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+              Index Cond: (n.id = ci.person_id)
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=144
+Planning Time: 21.744 ms
+Execution Time: 0.394 ms

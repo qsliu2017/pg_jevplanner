@@ -1,0 +1,71 @@
+Query 1d: 1d.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(mc.note) AS production_note,
+       MIN(t.title) AS movie_title,
+       MIN(t.production_year) AS movie_year
+FROM company_type AS ct,
+     info_type AS it,
+     movie_companies AS mc,
+     movie_info_idx AS mi_idx,
+     title AS t
+WHERE ct.kind = 'production companies'
+  AND it.info = 'bottom 10 rank'
+  AND mc.note NOT LIKE '%(as Metro-Goldwyn-Mayer Pictures)%'
+  AND t.production_year >2000
+  AND ct.id = mc.company_type_id
+  AND t.id = mc.movie_id
+  AND t.id = mi_idx.movie_id
+  AND mc.movie_id = mi_idx.movie_id
+  AND it.id = mi_idx.info_type_id;
+
+Aggregate  (cost=68.59..68.60 rows=1 width=68) (actual rows=1.00 loops=1)
+  Output: min(mc.note), min(t.title), min(t.production_year)
+  Buffers: shared hit=4
+  ->  Nested Loop  (cost=15.87..68.56 rows=4 width=45) (actual rows=0.00 loops=1)
+        Output: mc.note, t.title, t.production_year
+        Inner Unique: true
+        Buffers: shared hit=4
+        ->  Nested Loop  (cost=15.59..64.99 rows=7 width=32) (actual rows=0.00 loops=1)
+              Output: mc.note, mc.movie_id, mi_idx.movie_id
+              Join Filter: (ct.id = mc.company_type_id)
+              Buffers: shared hit=4
+              ->  Nested Loop  (cost=15.31..55.19 rows=24 width=8) (actual rows=0.00 loops=1)
+                    Output: mi_idx.movie_id, ct.id
+                    Buffers: shared hit=4
+                    ->  Nested Loop  (cost=0.00..3.47 rows=1 width=8) (actual rows=1.00 loops=1)
+                          Output: ct.id, it.id
+                          Buffers: shared hit=2
+                          ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                Output: ct.id, ct.kind
+                                Filter: ((ct.kind)::text = 'production companies'::text)
+                                Rows Removed by Filter: 3
+                                Buffers: shared hit=1
+                          ->  Seq Scan on public.info_type it  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                Output: it.id, it.info
+                                Filter: ((it.info)::text = 'bottom 10 rank'::text)
+                                Rows Removed by Filter: 112
+                                Buffers: shared hit=1
+                    ->  Bitmap Heap Scan on public.movie_info_idx mi_idx  (cost=15.31..42.65 rows=907 width=8) (actual rows=0.00 loops=1)
+                          Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                          Recheck Cond: (it.id = mi_idx.info_type_id)
+                          Buffers: shared hit=2
+                          ->  Bitmap Index Scan on info_type_id_movie_info_idx  (cost=0.00..15.08 rows=907 width=0) (actual rows=0.00 loops=1)
+                                Index Cond: (mi_idx.info_type_id = it.id)
+                                Index Searches: 1
+                                Buffers: shared hit=2
+              ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.40 rows=1 width=32) (never executed)
+                    Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                    Index Cond: (mc.movie_id = mi_idx.movie_id)
+                    Filter: (mc.note !~~ '%(as Metro-Goldwyn-Mayer Pictures)%'::text)
+                    Index Searches: 0
+        ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.51 rows=1 width=25) (never executed)
+              Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+              Index Cond: (t.id = mc.movie_id)
+              Filter: (t.production_year > 2000)
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=38
+Planning Time: 3721.655 ms
+Execution Time: 0.120 ms

@@ -1,0 +1,80 @@
+Query 5c: 5c.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(t.title) AS american_movie
+FROM company_type AS ct,
+     info_type AS it,
+     movie_companies AS mc,
+     movie_info AS mi,
+     title AS t
+WHERE ct.kind = 'production companies'
+  AND mc.note NOT LIKE '%(TV)%'
+  AND mc.note LIKE '%(USA)%'
+  AND mi.info IN ('Sweden',
+                  'Norway',
+                  'Germany',
+                  'Denmark',
+                  'Swedish',
+                  'Denish',
+                  'Norwegian',
+                  'German',
+                  'USA',
+                  'American')
+  AND t.production_year > 1990
+  AND t.id = mi.movie_id
+  AND t.id = mc.movie_id
+  AND mc.movie_id = mi.movie_id
+  AND ct.id = mc.company_type_id
+  AND it.id = mi.info_type_id;
+
+Aggregate  (cost=305.28..305.29 rows=1 width=32) (actual rows=1.00 loops=1)
+  Output: min(t.title)
+  Buffers: shared hit=24
+  ->  Hash Join  (cost=4.42..305.14 rows=55 width=17) (actual rows=0.00 loops=1)
+        Output: t.title
+        Inner Unique: true
+        Hash Cond: (mi.info_type_id = it.id)
+        Buffers: shared hit=24
+        ->  Nested Loop  (cost=0.88..301.45 rows=55 width=21) (actual rows=0.00 loops=1)
+              Output: mi.info_type_id, t.title
+              Buffers: shared hit=24
+              ->  Nested Loop  (cost=0.56..258.31 rows=61 width=25) (actual rows=0.00 loops=1)
+                    Output: mc.movie_id, t.title, t.id
+                    Inner Unique: true
+                    Buffers: shared hit=24
+                    ->  Nested Loop  (cost=0.28..98.69 rows=86 width=4) (actual rows=1.00 loops=1)
+                          Output: mc.movie_id
+                          Buffers: shared hit=21
+                          ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                Output: ct.id, ct.kind
+                                Filter: ((ct.kind)::text = 'production companies'::text)
+                                Rows Removed by Filter: 3
+                                Buffers: shared hit=1
+                          ->  Index Scan using company_type_id_movie_companies on public.movie_companies mc  (cost=0.28..95.91 rows=173 width=8) (actual rows=1.00 loops=1)
+                                Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                Index Cond: (mc.company_type_id = ct.id)
+                                Filter: ((mc.note !~~ '%(TV)%'::text) AND (mc.note ~~ '%(USA)%'::text))
+                                Rows Removed by Filter: 2648
+                                Index Searches: 1
+                                Buffers: shared hit=20
+                    ->  Index Scan using title_pkey on public.title t  (cost=0.28..1.86 rows=1 width=21) (actual rows=0.00 loops=1)
+                          Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                          Index Cond: (t.id = mc.movie_id)
+                          Filter: (t.production_year > 1990)
+                          Rows Removed by Filter: 1
+                          Index Searches: 1
+                          Buffers: shared hit=3
+              ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.31..0.70 rows=1 width=8) (never executed)
+                    Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                    Index Cond: (mi.movie_id = t.id)
+                    Filter: (mi.info = ANY ('{Sweden,Norway,Germany,Denmark,Swedish,Denish,Norwegian,German,USA,American}'::text[]))
+                    Index Searches: 0
+        ->  Hash  (cost=2.13..2.13 rows=113 width=4) (never executed)
+              Output: it.id
+              ->  Seq Scan on public.info_type it  (cost=0.00..2.13 rows=113 width=4) (never executed)
+                    Output: it.id
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=38
+Planning Time: 0.668 ms
+Execution Time: 0.441 ms

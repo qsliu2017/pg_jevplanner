@@ -1,0 +1,87 @@
+Query 5c: 5c.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(t.title) AS american_movie
+FROM company_type AS ct,
+     info_type AS it,
+     movie_companies AS mc,
+     movie_info AS mi,
+     title AS t
+WHERE ct.kind = 'production companies'
+  AND mc.note NOT LIKE '%(TV)%'
+  AND mc.note LIKE '%(USA)%'
+  AND mi.info IN ('Sweden',
+                  'Norway',
+                  'Germany',
+                  'Denmark',
+                  'Swedish',
+                  'Denish',
+                  'Norwegian',
+                  'German',
+                  'USA',
+                  'American')
+  AND t.production_year > 1990
+  AND t.id = mi.movie_id
+  AND t.id = mc.movie_id
+  AND mc.movie_id = mi.movie_id
+  AND ct.id = mc.company_type_id
+  AND it.id = mi.info_type_id;
+
+Aggregate  (cost=437.87..437.88 rows=1 width=32) (actual rows=1.00 loops=1)
+  Output: min(t.title)
+  Buffers: shared hit=149
+  ->  Nested Loop  (cost=277.24..437.84 rows=11 width=17) (actual rows=0.00 loops=1)
+        Output: t.title
+        Inner Unique: true
+        Buffers: shared hit=149
+        ->  Nested Loop  (cost=277.10..435.99 rows=11 width=21) (actual rows=0.00 loops=1)
+              Output: mi.info_type_id, t.title
+              Buffers: shared hit=149
+              ->  Hash Join  (cost=276.79..392.84 rows=61 width=25) (actual rows=0.00 loops=1)
+                    Output: mc.movie_id, t.title, t.id
+                    Inner Unique: true
+                    Hash Cond: (mc.company_type_id = ct.id)
+                    Buffers: shared hit=149
+                    ->  Hash Join  (cost=275.73..390.46 rows=245 width=29) (actual rows=195.00 loops=1)
+                          Output: mc.movie_id, mc.company_type_id, t.title, t.id
+                          Inner Unique: true
+                          Hash Cond: (mc.movie_id = t.id)
+                          Buffers: shared hit=148
+                          ->  Seq Scan on public.movie_companies mc  (cost=0.00..113.83 rows=345 width=8) (actual rows=551.00 loops=1)
+                                Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                Filter: ((mc.note !~~ '%(TV)%'::text) AND (mc.note ~~ '%(USA)%'::text))
+                                Rows Removed by Filter: 4571
+                                Buffers: shared hit=37
+                          ->  Hash  (cost=207.25..207.25 rows=5478 width=21) (actual rows=5478.00 loops=1)
+                                Output: t.title, t.id
+                                Buckets: 8192  Batches: 1  Memory Usage: 357kB
+                                Buffers: shared hit=111
+                                ->  Seq Scan on public.title t  (cost=0.00..207.25 rows=5478 width=21) (actual rows=5478.00 loops=1)
+                                      Output: t.title, t.id
+                                      Filter: (t.production_year > 1990)
+                                      Rows Removed by Filter: 2222
+                                      Buffers: shared hit=111
+                    ->  Hash  (cost=1.05..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: ct.id
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                Output: ct.id
+                                Filter: ((ct.kind)::text = 'production companies'::text)
+                                Rows Removed by Filter: 3
+                                Buffers: shared hit=1
+              ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.31..0.70 rows=1 width=8) (never executed)
+                    Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                    Index Cond: (mi.movie_id = t.id)
+                    Filter: (mi.info = ANY ('{Sweden,Norway,Germany,Denmark,Swedish,Denish,Norwegian,German,USA,American}'::text[]))
+                    Index Searches: 0
+        ->  Index Only Scan using info_type_pkey on public.info_type it  (cost=0.14..0.17 rows=1 width=4) (never executed)
+              Output: it.id
+              Index Cond: (it.id = mi.info_type_id)
+              Heap Fetches: 0
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=38
+Planning Time: 2234.285 ms
+Execution Time: 2.717 ms

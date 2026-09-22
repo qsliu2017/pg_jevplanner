@@ -1,0 +1,101 @@
+Query 17f: 17f.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(n.name) AS member_in_charnamed_movie
+FROM cast_info AS ci,
+     company_name AS cn,
+     keyword AS k,
+     movie_companies AS mc,
+     movie_keyword AS mk,
+     name AS n,
+     title AS t
+WHERE k.keyword ='character-name-in-title'
+  AND n.name LIKE '%B%'
+  AND n.id = ci.person_id
+  AND ci.movie_id = t.id
+  AND t.id = mk.movie_id
+  AND mk.keyword_id = k.id
+  AND t.id = mc.movie_id
+  AND mc.company_id = cn.id
+  AND ci.movie_id = mc.movie_id
+  AND ci.movie_id = mk.movie_id
+  AND mc.movie_id = mk.movie_id;
+
+Aggregate  (cost=3167.99..3168.00 rows=1 width=32) (actual rows=1.00 loops=1)
+  Output: min(n.name)
+  Buffers: shared hit=6578
+  ->  Nested Loop  (cost=1724.61..3167.98 rows=1 width=15) (actual rows=2365.00 loops=1)
+        Output: n.name
+        Inner Unique: true
+        Buffers: shared hit=6578
+        ->  Hash Join  (cost=1724.33..3167.68 rows=1 width=19) (actual rows=2365.00 loops=1)
+              Output: mc.company_id, n.name
+              Hash Cond: (ci.movie_id = t.id)
+              Buffers: shared hit=1847
+              ->  Hash Join  (cost=1623.23..3031.15 rows=9443 width=19) (actual rows=9506.00 loops=1)
+                    Output: ci.movie_id, n.name
+                    Inner Unique: true
+                    Hash Cond: (ci.person_id = n.id)
+                    Buffers: shared hit=1300
+                    ->  Seq Scan on public.cast_info ci  (cost=0.00..1219.14 rows=71914 width=8) (actual rows=71914.00 loops=1)
+                          Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                          Buffers: shared hit=500
+                    ->  Hash  (cost=1527.68..1527.68 rows=7644 width=19) (actual rows=7728.00 loops=1)
+                          Output: n.name, n.id
+                          Buckets: 8192  Batches: 1  Memory Usage: 464kB
+                          Buffers: shared hit=800
+                          ->  Seq Scan on public.name n  (cost=0.00..1527.68 rows=7644 width=19) (actual rows=7728.00 loops=1)
+                                Output: n.name, n.id
+                                Filter: (n.name ~~ '%B%'::text)
+                                Rows Removed by Filter: 50486
+                                Buffers: shared hit=800
+              ->  Hash  (cost=101.09..101.09 rows=1 width=16) (actual rows=328.00 loops=1)
+                    Output: mc.movie_id, mc.company_id, t.id, mk.movie_id
+                    Buckets: 1024  Batches: 1  Memory Usage: 24kB
+                    Buffers: shared hit=547
+                    ->  Nested Loop  (cost=4.87..101.09 rows=1 width=16) (actual rows=328.00 loops=1)
+                          Output: mc.movie_id, mc.company_id, t.id, mk.movie_id
+                          Buffers: shared hit=547
+                          ->  Nested Loop  (cost=4.58..100.37 rows=2 width=8) (actual rows=87.00 loops=1)
+                                Output: t.id, mk.movie_id
+                                Inner Unique: true
+                                Buffers: shared hit=246
+                                ->  Nested Loop  (cost=4.30..99.75 rows=2 width=4) (actual rows=87.00 loops=1)
+                                      Output: mk.movie_id
+                                      Buffers: shared hit=71
+                                      ->  Seq Scan on public.keyword k  (cost=0.00..88.62 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: k.id, k.keyword, k.phonetic_code
+                                            Filter: (k.keyword = 'character-name-in-title'::text)
+                                            Rows Removed by Filter: 4609
+                                            Buffers: shared hit=31
+                                      ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (actual rows=87.00 loops=1)
+                                            Output: mk.id, mk.movie_id, mk.keyword_id
+                                            Recheck Cond: (k.id = mk.keyword_id)
+                                            Heap Blocks: exact=38
+                                            Buffers: shared hit=40
+                                            ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (actual rows=87.00 loops=1)
+                                                  Index Cond: (mk.keyword_id = k.id)
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=2
+                                ->  Index Only Scan using title_pkey on public.title t  (cost=0.28..0.31 rows=1 width=4) (actual rows=1.00 loops=87)
+                                      Output: t.id
+                                      Index Cond: (t.id = mk.movie_id)
+                                      Heap Fetches: 0
+                                      Index Searches: 87
+                                      Buffers: shared hit=175
+                          ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.34 rows=2 width=8) (actual rows=3.77 loops=87)
+                                Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                Index Cond: (mc.movie_id = t.id)
+                                Index Searches: 87
+                                Buffers: shared hit=301
+        ->  Index Only Scan using company_name_pkey on public.company_name cn  (cost=0.28..0.31 rows=1 width=4) (actual rows=1.00 loops=2365)
+              Output: cn.id
+              Index Cond: (cn.id = mc.company_id)
+              Heap Fetches: 0
+              Index Searches: 2365
+              Buffers: shared hit=4731
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=108
+Planning Time: 8783.240 ms
+Execution Time: 27.139 ms

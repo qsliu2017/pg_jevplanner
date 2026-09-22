@@ -1,0 +1,105 @@
+Query 18a: 18a.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(mi.info) AS movie_budget,
+       MIN(mi_idx.info) AS movie_votes,
+       MIN(t.title) AS movie_title
+FROM cast_info AS ci,
+     info_type AS it1,
+     info_type AS it2,
+     movie_info AS mi,
+     movie_info_idx AS mi_idx,
+     name AS n,
+     title AS t
+WHERE ci.note IN ('(producer)',
+                  '(executive producer)')
+  AND it1.info = 'budget'
+  AND it2.info = 'votes'
+  AND n.gender = 'm'
+  AND n.name LIKE '%Tim%'
+  AND t.id = mi.movie_id
+  AND t.id = mi_idx.movie_id
+  AND t.id = ci.movie_id
+  AND ci.movie_id = mi.movie_id
+  AND ci.movie_id = mi_idx.movie_id
+  AND mi.movie_id = mi_idx.movie_id
+  AND n.id = ci.person_id
+  AND it1.id = mi.info_type_id
+  AND it2.id = mi_idx.info_type_id;
+
+Aggregate  (cost=82.13..82.14 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(mi.info), min(mi_idx.info), min(t.title)
+  Buffers: shared hit=11331
+  ->  Nested Loop  (cost=6.00..82.12 rows=1 width=61) (actual rows=0.00 loops=1)
+        Output: mi.info, mi_idx.info, t.title
+        Inner Unique: true
+        Buffers: shared hit=11331
+        ->  Nested Loop  (cost=5.72..81.80 rows=1 width=56) (actual rows=0.00 loops=1)
+              Output: ci.movie_id, mi.info, mi.movie_id, mi_idx.info, mi_idx.movie_id
+              Inner Unique: true
+              Buffers: shared hit=11331
+              ->  Nested Loop  (cost=5.43..79.49 rows=2 width=60) (actual rows=167.00 loops=1)
+                    Output: ci.movie_id, ci.person_id, mi.info, mi.movie_id, mi_idx.info, mi_idx.movie_id
+                    Buffers: shared hit=10830
+                    ->  Hash Join  (cost=5.14..78.77 rows=1 width=52) (actual rows=68.00 loops=1)
+                          Output: mi.info, mi.movie_id, mi_idx.info, mi_idx.movie_id
+                          Inner Unique: true
+                          Hash Cond: (mi.info_type_id = it1.id)
+                          Buffers: shared hit=8637
+                          ->  Nested Loop  (cost=2.71..75.97 rows=139 width=56) (actual rows=12948.00 loops=1)
+                                Output: mi_idx.info, mi_idx.movie_id, mi.info, mi.movie_id, mi.info_type_id
+                                Buffers: shared hit=8636
+                                ->  Hash Join  (cost=2.43..53.04 rows=24 width=9) (actual rows=907.00 loops=1)
+                                      Output: mi_idx.info, mi_idx.movie_id
+                                      Inner Unique: true
+                                      Hash Cond: (mi_idx.info_type_id = it2.id)
+                                      Buffers: shared hit=17
+                                      ->  Seq Scan on public.movie_info_idx mi_idx  (cost=0.00..43.21 rows=2721 width=13) (actual rows=2721.00 loops=1)
+                                            Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                                            Buffers: shared hit=16
+                                      ->  Hash  (cost=2.41..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: it2.id
+                                            Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                            Buffers: shared hit=1
+                                            ->  Seq Scan on public.info_type it2  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                                  Output: it2.id
+                                                  Filter: ((it2.info)::text = 'votes'::text)
+                                                  Rows Removed by Filter: 112
+                                                  Buffers: shared hit=1
+                                ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.29..0.90 rows=6 width=47) (actual rows=14.28 loops=907)
+                                      Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                                      Index Cond: (mi.movie_id = mi_idx.movie_id)
+                                      Index Searches: 907
+                                      Buffers: shared hit=8619
+                          ->  Hash  (cost=2.41..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                Output: it1.id
+                                Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                Buffers: shared hit=1
+                                ->  Seq Scan on public.info_type it1  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                      Output: it1.id
+                                      Filter: ((it1.info)::text = 'budget'::text)
+                                      Rows Removed by Filter: 112
+                                      Buffers: shared hit=1
+                    ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..0.71 rows=1 width=8) (actual rows=2.46 loops=68)
+                          Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                          Index Cond: (ci.movie_id = mi.movie_id)
+                          Filter: (ci.note = ANY ('{(producer),"(executive producer)"}'::text[]))
+                          Rows Removed by Filter: 33
+                          Index Searches: 68
+                          Buffers: shared hit=2193
+              ->  Index Scan using name_pkey on public.name n  (cost=0.29..1.15 rows=1 width=4) (actual rows=0.00 loops=167)
+                    Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+                    Index Cond: (n.id = ci.person_id)
+                    Filter: ((n.name ~~ '%Tim%'::text) AND ((n.gender)::text = 'm'::text))
+                    Rows Removed by Filter: 1
+                    Index Searches: 167
+                    Buffers: shared hit=501
+        ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.32 rows=1 width=21) (never executed)
+              Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+              Index Cond: (t.id = mi.movie_id)
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=84
+Planning Time: 1.390 ms
+Execution Time: 5.810 ms

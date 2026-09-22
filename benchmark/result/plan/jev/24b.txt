@@ -1,0 +1,158 @@
+Query 24b: 24b.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(chn.name) AS voiced_char_name,
+       MIN(n.name) AS voicing_actress_name,
+       MIN(t.title) AS kung_fu_panda
+FROM aka_name AS an,
+     char_name AS chn,
+     cast_info AS ci,
+     company_name AS cn,
+     info_type AS it,
+     keyword AS k,
+     movie_companies AS mc,
+     movie_info AS mi,
+     movie_keyword AS mk,
+     name AS n,
+     role_type AS rt,
+     title AS t
+WHERE ci.note IN ('(voice)',
+                  '(voice: Japanese version)',
+                  '(voice) (uncredited)',
+                  '(voice: English version)')
+  AND cn.country_code ='[us]'
+  AND cn.name = 'DreamWorks Animation'
+  AND it.info = 'release dates'
+  AND k.keyword IN ('hero',
+                    'martial-arts',
+                    'hand-to-hand-combat',
+                    'computer-animated-movie')
+  AND mi.info IS NOT NULL
+  AND (mi.info LIKE 'Japan:%201%'
+       OR mi.info LIKE 'USA:%201%')
+  AND n.gender ='f'
+  AND n.name LIKE '%An%'
+  AND rt.role ='actress'
+  AND t.production_year > 2010
+  AND t.title LIKE 'Kung Fu Panda%'
+  AND t.id = mi.movie_id
+  AND t.id = mc.movie_id
+  AND t.id = ci.movie_id
+  AND t.id = mk.movie_id
+  AND mc.movie_id = ci.movie_id
+  AND mc.movie_id = mi.movie_id
+  AND mc.movie_id = mk.movie_id
+  AND mi.movie_id = ci.movie_id
+  AND mi.movie_id = mk.movie_id
+  AND ci.movie_id = mk.movie_id
+  AND cn.id = mc.company_id
+  AND it.id = mi.info_type_id
+  AND n.id = ci.person_id
+  AND rt.id = ci.role_id
+  AND n.id = an.person_id
+  AND ci.person_id = an.person_id
+  AND chn.id = ci.person_role_id
+  AND k.id = mk.keyword_id;
+
+Aggregate  (cost=444.45..444.46 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(chn.name), min(n.name), min(t.title)
+  Buffers: shared hit=111
+  ->  Nested Loop  (cost=10.44..444.44 rows=1 width=46) (actual rows=0.00 loops=1)
+        Output: chn.name, n.name, t.title
+        Inner Unique: true
+        Buffers: shared hit=111
+        ->  Nested Loop  (cost=10.16..444.04 rows=1 width=50) (actual rows=0.00 loops=1)
+              Output: chn.name, n.name, mc.company_id, t.title
+              Inner Unique: true
+              Buffers: shared hit=111
+              ->  Nested Loop  (cost=9.87..442.86 rows=1 width=40) (actual rows=0.00 loops=1)
+                    Output: n.name, mc.company_id, ci.person_role_id, t.title
+                    Join Filter: (an.person_id = n.id)
+                    Buffers: shared hit=111
+                    ->  Nested Loop  (cost=9.58..442.18 rows=1 width=48) (actual rows=0.00 loops=1)
+                          Output: n.name, n.id, mc.company_id, ci.person_id, ci.person_role_id, t.title
+                          Inner Unique: true
+                          Buffers: shared hit=111
+                          ->  Nested Loop  (cost=9.29..439.31 rows=1 width=29) (actual rows=0.00 loops=1)
+                                Output: mc.company_id, ci.person_id, ci.person_role_id, t.title
+                                Join Filter: (mk.movie_id = t.id)
+                                Buffers: shared hit=111
+                                ->  Nested Loop  (cost=4.99..294.59 rows=1 width=45) (actual rows=0.00 loops=1)
+                                      Output: mi.movie_id, mc.movie_id, mc.company_id, ci.movie_id, ci.person_id, ci.person_role_id, t.title, t.id
+                                      Join Filter: ((it.id = mi.info_type_id) AND (ci.role_id = rt.id))
+                                      Buffers: shared hit=111
+                                      ->  Nested Loop  (cost=4.99..291.01 rows=1 width=53) (actual rows=0.00 loops=1)
+                                            Output: mi.movie_id, mi.info_type_id, mc.movie_id, mc.company_id, ci.movie_id, ci.person_id, ci.role_id, ci.person_role_id, t.title, t.id
+                                            Join Filter: (mi.movie_id = t.id)
+                                            Buffers: shared hit=111
+                                            ->  Nested Loop  (cost=4.70..290.30 rows=1 width=45) (actual rows=0.00 loops=1)
+                                                  Output: mc.movie_id, mc.company_id, ci.movie_id, ci.person_id, ci.role_id, ci.person_role_id, t.title, t.id
+                                                  Join Filter: (mc.movie_id = t.id)
+                                                  Buffers: shared hit=111
+                                                  ->  Nested Loop  (cost=4.42..289.82 rows=1 width=37) (actual rows=0.00 loops=1)
+                                                        Output: ci.movie_id, ci.person_id, ci.role_id, ci.person_role_id, t.title, t.id
+                                                        Buffers: shared hit=111
+                                                        ->  Seq Scan on public.title t  (cost=0.00..226.50 rows=1 width=21) (actual rows=0.00 loops=1)
+                                                              Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                                              Filter: ((t.production_year > 2010) AND (t.title ~~ 'Kung Fu Panda%'::text))
+                                                              Rows Removed by Filter: 7700
+                                                              Buffers: shared hit=111
+                                                        ->  Bitmap Heap Scan on public.cast_info ci  (cost=4.42..63.31 rows=1 width=16) (never executed)
+                                                              Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                                              Recheck Cond: (ci.movie_id = t.id)
+                                                              Filter: (ci.note = ANY ('{(voice),"(voice: Japanese version)","(voice) (uncredited)","(voice: English version)"}'::text[]))
+                                                              ->  Bitmap Index Scan on movie_id_cast_info  (cost=0.00..4.42 rows=17 width=0) (never executed)
+                                                                    Index Cond: (ci.movie_id = t.id)
+                                                                    Index Searches: 0
+                                                  ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.45 rows=2 width=8) (never executed)
+                                                        Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                                        Index Cond: (mc.movie_id = ci.movie_id)
+                                                        Index Searches: 0
+                                            ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.29..0.69 rows=1 width=8) (never executed)
+                                                  Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                                                  Index Cond: (mi.movie_id = mc.movie_id)
+                                                  Filter: ((mi.info ~~ 'Japan:%201%'::text) OR (mi.info ~~ 'USA:%201%'::text))
+                                                  Index Searches: 0
+                                      ->  Nested Loop  (cost=0.00..3.57 rows=1 width=8) (never executed)
+                                            Output: it.id, rt.id
+                                            ->  Seq Scan on public.info_type it  (cost=0.00..2.41 rows=1 width=4) (never executed)
+                                                  Output: it.id, it.info
+                                                  Filter: ((it.info)::text = 'release dates'::text)
+                                            ->  Seq Scan on public.role_type rt  (cost=0.00..1.15 rows=1 width=4) (never executed)
+                                                  Output: rt.id, rt.role
+                                                  Filter: ((rt.role)::text = 'actress'::text)
+                                ->  Nested Loop  (cost=4.30..144.63 rows=7 width=4) (never executed)
+                                      Output: mk.movie_id
+                                      ->  Seq Scan on public.keyword k  (cost=0.00..100.15 rows=4 width=4) (never executed)
+                                            Output: k.id, k.keyword, k.phonetic_code
+                                            Filter: (k.keyword = ANY ('{hero,martial-arts,hand-to-hand-combat,computer-animated-movie}'::text[]))
+                                      ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (never executed)
+                                            Output: mk.id, mk.movie_id, mk.keyword_id
+                                            Recheck Cond: (k.id = mk.keyword_id)
+                                            ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (never executed)
+                                                  Index Cond: (mk.keyword_id = k.id)
+                                                  Index Searches: 0
+                          ->  Index Scan using name_pkey on public.name n  (cost=0.29..2.85 rows=1 width=19) (never executed)
+                                Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+                                Index Cond: (n.id = ci.person_id)
+                                Filter: ((n.name ~~ '%An%'::text) AND ((n.gender)::text = 'f'::text))
+                                Index Searches: 0
+                    ->  Index Only Scan using person_id_aka_name on public.aka_name an  (cost=0.29..0.66 rows=2 width=4) (never executed)
+                          Output: an.person_id
+                          Index Cond: (an.person_id = ci.person_id)
+                          Heap Fetches: 0
+                          Index Searches: 0
+              ->  Index Scan using char_name_pkey on public.char_name chn  (cost=0.29..1.17 rows=1 width=18) (never executed)
+                    Output: chn.id, chn.name, chn.imdb_index, chn.imdb_id, chn.name_pcode_nf, chn.surname_pcode, chn.md5sum
+                    Index Cond: (chn.id = ci.person_role_id)
+                    Index Searches: 0
+        ->  Index Scan using company_name_pkey on public.company_name cn  (cost=0.28..0.34 rows=1 width=4) (never executed)
+              Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+              Index Cond: (cn.id = mc.company_id)
+              Filter: (((cn.country_code)::text = '[us]'::text) AND (cn.name = 'DreamWorks Animation'::text))
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=196
+Planning Time: 10365.562 ms
+Execution Time: 1.670 ms

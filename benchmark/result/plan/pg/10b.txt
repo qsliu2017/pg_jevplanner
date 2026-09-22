@@ -1,0 +1,95 @@
+Query 10b: 10b.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(chn.name) AS character,
+       MIN(t.title) AS russian_mov_with_actor_producer
+FROM char_name AS chn,
+     cast_info AS ci,
+     company_name AS cn,
+     company_type AS ct,
+     movie_companies AS mc,
+     role_type AS rt,
+     title AS t
+WHERE ci.note LIKE '%(producer)%'
+  AND cn.country_code = '[ru]'
+  AND rt.role = 'actor'
+  AND t.production_year > 2010
+  AND t.id = mc.movie_id
+  AND t.id = ci.movie_id
+  AND ci.movie_id = mc.movie_id
+  AND chn.id = ci.person_role_id
+  AND rt.id = ci.role_id
+  AND cn.id = mc.company_id
+  AND ct.id = mc.company_type_id;
+
+Aggregate  (cost=195.92..195.93 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(chn.name), min(t.title)
+  Buffers: shared hit=123
+  ->  Nested Loop  (cost=81.28..195.91 rows=1 width=31) (actual rows=0.00 loops=1)
+        Output: chn.name, t.title
+        Inner Unique: true
+        Buffers: shared hit=123
+        ->  Nested Loop  (cost=81.15..195.76 rows=1 width=35) (actual rows=0.00 loops=1)
+              Output: chn.name, mc.company_type_id, t.title
+              Inner Unique: true
+              Buffers: shared hit=123
+              ->  Nested Loop  (cost=80.86..194.99 rows=1 width=25) (actual rows=0.00 loops=1)
+                    Output: ci.person_role_id, mc.company_type_id, t.title
+                    Inner Unique: true
+                    Buffers: shared hit=123
+                    ->  Nested Loop  (cost=80.72..194.48 rows=3 width=29) (actual rows=0.00 loops=1)
+                          Output: ci.person_role_id, ci.role_id, mc.company_type_id, t.title
+                          Join Filter: (ci.movie_id = t.id)
+                          Buffers: shared hit=123
+                          ->  Nested Loop  (cost=80.43..191.20 rows=3 width=29) (actual rows=0.00 loops=1)
+                                Output: mc.movie_id, mc.company_type_id, t.title, t.id
+                                Inner Unique: true
+                                Buffers: shared hit=123
+                                ->  Hash Join  (cost=80.15..181.84 rows=23 width=8) (actual rows=15.00 loops=1)
+                                      Output: mc.movie_id, mc.company_type_id
+                                      Inner Unique: true
+                                      Hash Cond: (mc.company_id = cn.id)
+                                      Buffers: shared hit=78
+                                      ->  Seq Scan on public.movie_companies mc  (cost=0.00..88.22 rows=5122 width=12) (actual rows=5122.00 loops=1)
+                                            Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                            Buffers: shared hit=37
+                                      ->  Hash  (cost=79.97..79.97 rows=14 width=4) (actual rows=14.00 loops=1)
+                                            Output: cn.id
+                                            Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                            Buffers: shared hit=41
+                                            ->  Seq Scan on public.company_name cn  (cost=0.00..79.97 rows=14 width=4) (actual rows=14.00 loops=1)
+                                                  Output: cn.id
+                                                  Filter: ((cn.country_code)::text = '[ru]'::text)
+                                                  Rows Removed by Filter: 3104
+                                                  Buffers: shared hit=41
+                                ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.41 rows=1 width=21) (actual rows=0.00 loops=15)
+                                      Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                      Index Cond: (t.id = mc.movie_id)
+                                      Filter: (t.production_year > 2010)
+                                      Rows Removed by Filter: 1
+                                      Index Searches: 15
+                                      Buffers: shared hit=45
+                          ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..1.08 rows=1 width=12) (never executed)
+                                Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                Index Cond: (ci.movie_id = mc.movie_id)
+                                Filter: (ci.note ~~ '%(producer)%'::text)
+                                Index Searches: 0
+                    ->  Index Scan using role_type_pkey on public.role_type rt  (cost=0.14..0.16 rows=1 width=4) (never executed)
+                          Output: rt.id, rt.role
+                          Index Cond: (rt.id = ci.role_id)
+                          Filter: ((rt.role)::text = 'actor'::text)
+                          Index Searches: 0
+              ->  Index Scan using char_name_pkey on public.char_name chn  (cost=0.29..0.77 rows=1 width=18) (never executed)
+                    Output: chn.id, chn.name, chn.imdb_index, chn.imdb_id, chn.name_pcode_nf, chn.surname_pcode, chn.md5sum
+                    Index Cond: (chn.id = ci.person_role_id)
+                    Index Searches: 0
+        ->  Index Only Scan using company_type_pkey on public.company_type ct  (cost=0.13..0.15 rows=1 width=4) (never executed)
+              Output: ct.id
+              Index Cond: (ct.id = mc.company_type_id)
+              Heap Fetches: 0
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=66
+Planning Time: 1.636 ms
+Execution Time: 0.893 ms

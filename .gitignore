@@ -1,0 +1,13 @@
+*.o
+*.so
+*.dylib
+*.bc
+*.dSYM/
+__pycache__/
+/results/
+/regression.diffs
+/regression.out
+/tmp_check/
+/.local/
+/benchmark/data/
+/benchmark/result-*/

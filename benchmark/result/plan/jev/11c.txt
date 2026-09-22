@@ -1,0 +1,131 @@
+Query 11c: 11c.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(cn.name) AS from_company,
+       MIN(mc.note) AS production_note,
+       MIN(t.title) AS movie_based_on_book
+FROM company_name AS cn,
+     company_type AS ct,
+     keyword AS k,
+     link_type AS lt,
+     movie_companies AS mc,
+     movie_keyword AS mk,
+     movie_link AS ml,
+     title AS t
+WHERE cn.country_code !='[pl]'
+  AND (cn.name LIKE '20th Century Fox%'
+       OR cn.name LIKE 'Twentieth Century Fox%')
+  AND ct.kind != 'production companies'
+  AND ct.kind IS NOT NULL
+  AND k.keyword IN ('sequel',
+                    'revenge',
+                    'based-on-novel')
+  AND mc.note IS NOT NULL
+  AND t.production_year > 1950
+  AND lt.id = ml.link_type_id
+  AND ml.movie_id = t.id
+  AND t.id = mk.movie_id
+  AND mk.keyword_id = k.id
+  AND t.id = mc.movie_id
+  AND mc.company_type_id = ct.id
+  AND mc.company_id = cn.id
+  AND ml.movie_id = mk.movie_id
+  AND ml.movie_id = mc.movie_id
+  AND mk.movie_id = mc.movie_id;
+
+Aggregate  (cost=266.01..266.02 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(cn.name), min(mc.note), min(t.title)
+  Buffers: shared hit=116 read=1
+  ->  Merge Join  (cost=148.25..266.00 rows=1 width=61) (actual rows=0.00 loops=1)
+        Output: cn.name, mc.note, t.title
+        Merge Cond: (mk.movie_id = ml.movie_id)
+        Buffers: shared hit=116 read=1
+        ->  Nested Loop  (cost=0.29..706.64 rows=6 width=4) (actual rows=1.00 loops=1)
+              Output: mk.movie_id
+              Inner Unique: true
+              Join Filter: (k.id = mk.keyword_id)
+              Rows Removed by Join Filter: 112
+              Buffers: shared hit=34
+              ->  Index Scan using movie_id_movie_keyword on public.movie_keyword mk  (cost=0.29..227.54 rows=8550 width=8) (actual rows=38.00 loops=1)
+                    Output: mk.id, mk.movie_id, mk.keyword_id
+                    Index Searches: 1
+                    Buffers: shared hit=3
+              ->  Materialize  (cost=0.00..94.40 rows=3 width=4) (actual rows=2.97 loops=38)
+                    Output: k.id
+                    Storage: Memory  Maximum Storage: 17kB
+                    Buffers: shared hit=31
+                    ->  Seq Scan on public.keyword k  (cost=0.00..94.39 rows=3 width=4) (actual rows=3.00 loops=1)
+                          Output: k.id
+                          Filter: (k.keyword = ANY ('{sequel,revenge,based-on-novel}'::text[]))
+                          Rows Removed by Filter: 4607
+                          Buffers: shared hit=31
+        ->  Sort  (cost=147.97..147.97 rows=1 width=73) (actual rows=0.00 loops=1)
+              Output: t.title, t.id, cn.name, mc.note, mc.movie_id, ml.movie_id
+              Sort Key: t.id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=82 read=1
+              ->  Nested Loop  (cost=8.24..147.96 rows=1 width=73) (actual rows=0.00 loops=1)
+                    Output: t.title, t.id, cn.name, mc.note, mc.movie_id, ml.movie_id
+                    Inner Unique: true
+                    Join Filter: (ml.movie_id = t.id)
+                    Buffers: shared hit=82 read=1
+                    ->  Hash Join  (cost=7.95..147.44 rows=1 width=52) (actual rows=0.00 loops=1)
+                          Output: cn.name, mc.note, mc.movie_id, ml.movie_id
+                          Hash Cond: ((mc.movie_id = ml.movie_id) AND (mc.company_type_id = ct.id))
+                          Buffers: shared hit=82 read=1
+                          ->  Nested Loop  (cost=0.28..139.41 rows=3 width=52) (actual rows=19.00 loops=1)
+                                Output: cn.name, mc.note, mc.movie_id, mc.company_type_id
+                                Buffers: shared hit=79 read=1
+                                ->  Seq Scan on public.company_name cn  (cost=0.00..95.56 rows=4 width=24) (actual rows=7.00 loops=1)
+                                      Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+                                      Filter: (((cn.country_code)::text <> '[pl]'::text) AND ((cn.name ~~ '20th Century Fox%'::text) OR (cn.name ~~ 'Twentieth Century Fox%'::text)))
+                                      Rows Removed by Filter: 3111
+                                      Buffers: shared hit=41
+                                ->  Index Scan using company_id_movie_companies on public.movie_companies mc  (cost=0.28..10.95 rows=1 width=36) (actual rows=2.71 loops=7)
+                                      Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                      Index Cond: (mc.company_id = cn.id)
+                                      Filter: (mc.note IS NOT NULL)
+                                      Rows Removed by Filter: 3
+                                      Index Searches: 7
+                                      Buffers: shared hit=38 read=1
+                          ->  Hash  (cost=5.69..5.69 rows=132 width=8) (actual rows=132.00 loops=1)
+                                Output: ct.id, ml.movie_id
+                                Buckets: 1024  Batches: 1  Memory Usage: 14kB
+                                Buffers: shared hit=3
+                                ->  Nested Loop  (cost=1.41..5.69 rows=132 width=8) (actual rows=132.00 loops=1)
+                                      Output: ct.id, ml.movie_id
+                                      Buffers: shared hit=3
+                                      ->  Hash Join  (cost=1.41..2.98 rows=44 width=4) (actual rows=44.00 loops=1)
+                                            Output: ml.movie_id
+                                            Inner Unique: true
+                                            Hash Cond: (ml.link_type_id = lt.id)
+                                            Buffers: shared hit=2
+                                            ->  Seq Scan on public.movie_link ml  (cost=0.00..1.44 rows=44 width=8) (actual rows=44.00 loops=1)
+                                                  Output: ml.id, ml.movie_id, ml.linked_movie_id, ml.link_type_id
+                                                  Buffers: shared hit=1
+                                            ->  Hash  (cost=1.18..1.18 rows=18 width=4) (actual rows=18.00 loops=1)
+                                                  Output: lt.id
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                  Buffers: shared hit=1
+                                                  ->  Seq Scan on public.link_type lt  (cost=0.00..1.18 rows=18 width=4) (actual rows=18.00 loops=1)
+                                                        Output: lt.id
+                                                        Buffers: shared hit=1
+                                      ->  Materialize  (cost=0.00..1.06 rows=3 width=4) (actual rows=3.00 loops=44)
+                                            Output: ct.id
+                                            Storage: Memory  Maximum Storage: 17kB
+                                            Buffers: shared hit=1
+                                            ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=3 width=4) (actual rows=3.00 loops=1)
+                                                  Output: ct.id
+                                                  Filter: ((ct.kind)::text <> 'production companies'::text)
+                                                  Rows Removed by Filter: 1
+                                                  Buffers: shared hit=1
+                    ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.51 rows=1 width=21) (never executed)
+                          Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                          Index Cond: (t.id = mc.movie_id)
+                          Filter: (t.production_year > 1950)
+                          Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=83
+Planning Time: 4224.216 ms
+Execution Time: 1.729 ms

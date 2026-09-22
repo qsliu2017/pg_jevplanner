@@ -1,0 +1,125 @@
+Query 13a: 13a.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(mi.info) AS release_date,
+       MIN(miidx.info) AS rating,
+       MIN(t.title) AS german_movie
+FROM company_name AS cn,
+     company_type AS ct,
+     info_type AS it,
+     info_type AS it2,
+     kind_type AS kt,
+     movie_companies AS mc,
+     movie_info AS mi,
+     movie_info_idx AS miidx,
+     title AS t
+WHERE cn.country_code ='[de]'
+  AND ct.kind ='production companies'
+  AND it.info ='rating'
+  AND it2.info ='release dates'
+  AND kt.kind ='movie'
+  AND mi.movie_id = t.id
+  AND it2.id = mi.info_type_id
+  AND kt.id = t.kind_id
+  AND mc.movie_id = t.id
+  AND cn.id = mc.company_id
+  AND ct.id = mc.company_type_id
+  AND miidx.movie_id = t.id
+  AND it.id = miidx.info_type_id
+  AND mi.movie_id = miidx.movie_id
+  AND mi.movie_id = mc.movie_id
+  AND miidx.movie_id = mc.movie_id;
+
+Aggregate  (cost=351.78..351.79 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(mi.info), min(miidx.info), min(t.title)
+  Buffers: shared hit=2773
+  ->  Nested Loop  (cost=135.93..351.78 rows=1 width=61) (actual rows=120.00 loops=1)
+        Output: mi.info, miidx.info, t.title
+        Join Filter: ((it2.id = mi.info_type_id) AND (kt.id = t.kind_id) AND (ct.id = mc.company_type_id))
+        Rows Removed by Join Filter: 6127
+        Buffers: shared hit=2773
+        ->  Nested Loop  (cost=0.00..4.57 rows=1 width=12) (actual rows=1.00 loops=1)
+              Output: it2.id, ct.id, kt.id
+              Buffers: shared hit=3
+              ->  Seq Scan on public.info_type it2  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                    Output: it2.id, it2.info
+                    Filter: ((it2.info)::text = 'release dates'::text)
+                    Rows Removed by Filter: 112
+                    Buffers: shared hit=1
+              ->  Nested Loop  (cost=0.00..2.15 rows=1 width=8) (actual rows=1.00 loops=1)
+                    Output: ct.id, kt.id
+                    Buffers: shared hit=2
+                    ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: ct.id, ct.kind
+                          Filter: ((ct.kind)::text = 'production companies'::text)
+                          Rows Removed by Filter: 3
+                          Buffers: shared hit=1
+                    ->  Seq Scan on public.kind_type kt  (cost=0.00..1.09 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: kt.id, kt.kind
+                          Filter: ((kt.kind)::text = 'movie'::text)
+                          Rows Removed by Filter: 6
+                          Buffers: shared hit=1
+        ->  Nested Loop  (cost=135.93..347.14 rows=4 width=73) (actual rows=6247.00 loops=1)
+              Output: mi.info, mi.info_type_id, t.title, t.kind_id, mc.company_type_id, miidx.info
+              Buffers: shared hit=2770
+              ->  Hash Join  (cost=135.64..346.50 rows=1 width=42) (actual rows=138.00 loops=1)
+                    Output: t.title, t.id, t.kind_id, mc.movie_id, mc.company_type_id, miidx.info, miidx.movie_id
+                    Hash Cond: (t.id = miidx.movie_id)
+                    Buffers: shared hit=878
+                    ->  Nested Loop  (cost=82.29..292.15 rows=268 width=33) (actual rows=261.00 loops=1)
+                          Output: t.title, t.id, t.kind_id, mc.movie_id, mc.company_type_id
+                          Inner Unique: true
+                          Buffers: shared hit=861
+                          ->  Hash Join  (cost=82.01..183.70 rows=268 width=8) (actual rows=261.00 loops=1)
+                                Output: mc.movie_id, mc.company_type_id
+                                Inner Unique: true
+                                Hash Cond: (mc.company_id = cn.id)
+                                Buffers: shared hit=78
+                                ->  Seq Scan on public.movie_companies mc  (cost=0.00..88.22 rows=5122 width=12) (actual rows=5122.00 loops=1)
+                                      Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                      Buffers: shared hit=37
+                                ->  Hash  (cost=79.97..79.97 rows=163 width=4) (actual rows=163.00 loops=1)
+                                      Output: cn.id
+                                      Buckets: 1024  Batches: 1  Memory Usage: 14kB
+                                      Buffers: shared hit=41
+                                      ->  Seq Scan on public.company_name cn  (cost=0.00..79.97 rows=163 width=4) (actual rows=163.00 loops=1)
+                                            Output: cn.id
+                                            Filter: ((cn.country_code)::text = '[de]'::text)
+                                            Rows Removed by Filter: 2955
+                                            Buffers: shared hit=41
+                          ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.40 rows=1 width=25) (actual rows=1.00 loops=261)
+                                Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                Index Cond: (t.id = mc.movie_id)
+                                Index Searches: 261
+                                Buffers: shared hit=783
+                    ->  Hash  (cost=53.04..53.04 rows=24 width=9) (actual rows=907.00 loops=1)
+                          Output: miidx.info, miidx.movie_id
+                          Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                          Buffers: shared hit=17
+                          ->  Hash Join  (cost=2.43..53.04 rows=24 width=9) (actual rows=907.00 loops=1)
+                                Output: miidx.info, miidx.movie_id
+                                Inner Unique: true
+                                Hash Cond: (miidx.info_type_id = it.id)
+                                Buffers: shared hit=17
+                                ->  Seq Scan on public.movie_info_idx miidx  (cost=0.00..43.21 rows=2721 width=13) (actual rows=2721.00 loops=1)
+                                      Output: miidx.id, miidx.movie_id, miidx.info_type_id, miidx.info, miidx.note
+                                      Buffers: shared hit=16
+                                ->  Hash  (cost=2.41..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                      Output: it.id
+                                      Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                      Buffers: shared hit=1
+                                      ->  Seq Scan on public.info_type it  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: it.id
+                                            Filter: ((it.info)::text = 'rating'::text)
+                                            Rows Removed by Filter: 112
+                                            Buffers: shared hit=1
+              ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.29..0.57 rows=6 width=47) (actual rows=45.27 loops=138)
+                    Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                    Index Cond: (mi.movie_id = t.id)
+                    Index Searches: 138
+                    Buffers: shared hit=1892
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=90
+Planning Time: 5985.739 ms
+Execution Time: 3.979 ms

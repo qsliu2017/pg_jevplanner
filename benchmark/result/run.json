@@ -1,0 +1,297 @@
+{
+  "jev_mode": "live",
+  "settings": {
+    "enable_hashjoin": "on",
+    "enable_indexscan": "on",
+    "enable_mergejoin": "on",
+    "enable_nestloop": "on",
+    "enable_seqscan": "on",
+    "from_collapse_limit": "8",
+    "geqo": "off",
+    "geqo_threshold": "12",
+    "jev.debug": "off",
+    "jev.log_http": "off",
+    "jev.max_candidates": "255",
+    "jev.max_decisions": "1000",
+    "jev.model": "jev-1.13.0",
+    "jev.planning_timeout_ms": "120000",
+    "jev.timeout_ms": "10000",
+    "jit": "off",
+    "join_collapse_limit": "8",
+    "lock_timeout": "10000",
+    "max_parallel_workers_per_gather": "0",
+    "plan_cache_mode": "force_generic_plan",
+    "server_version": "18.4",
+    "statement_timeout": "300000",
+    "work_mem": "4096"
+  },
+  "mode_settings": {
+    "pg": {
+      "jev.enabled": "off"
+    },
+    "jev": {
+      "jev.enabled": "on"
+    }
+  },
+  "queries": {
+    "1a": "1a.sql",
+    "1b": "1b.sql",
+    "1c": "1c.sql",
+    "1d": "1d.sql",
+    "2a": "2a.sql",
+    "2b": "2b.sql",
+    "2c": "2c.sql",
+    "2d": "2d.sql",
+    "3a": "3a.sql",
+    "3b": "3b.sql",
+    "3c": "3c.sql",
+    "4a": "4a.sql",
+    "4b": "4b.sql",
+    "4c": "4c.sql",
+    "5a": "5a.sql",
+    "5b": "5b.sql",
+    "5c": "5c.sql",
+    "6a": "6a.sql",
+    "6b": "6b.sql",
+    "6c": "6c.sql",
+    "6d": "6d.sql",
+    "6e": "6e.sql",
+    "6f": "6f.sql",
+    "7a": "7a.sql",
+    "7b": "7b.sql",
+    "7c": "7c.sql",
+    "8a": "8a.sql",
+    "8b": "8b.sql",
+    "8c": "8c.sql",
+    "8d": "8d.sql",
+    "9a": "9a.sql",
+    "9b": "9b.sql",
+    "9c": "9c.sql",
+    "9d": "9d.sql",
+    "10a": "10a.sql",
+    "10b": "10b.sql",
+    "10c": "10c.sql",
+    "11a": "11a.sql",
+    "11b": "11b.sql",
+    "11c": "11c.sql",
+    "11d": "11d.sql",
+    "12a": "12a.sql",
+    "12b": "12b.sql",
+    "12c": "12c.sql",
+    "13a": "13a.sql",
+    "13b": "13b.sql",
+    "13c": "13c.sql",
+    "13d": "13d.sql",
+    "14a": "14a.sql",
+    "14b": "14b.sql",
+    "14c": "14c.sql",
+    "15a": "15a.sql",
+    "15b": "15b.sql",
+    "15c": "15c.sql",
+    "15d": "15d.sql",
+    "16a": "16a.sql",
+    "16b": "16b.sql",
+    "16c": "16c.sql",
+    "16d": "16d.sql",
+    "17a": "17a.sql",
+    "17b": "17b.sql",
+    "17c": "17c.sql",
+    "17d": "17d.sql",
+    "17e": "17e.sql",
+    "17f": "17f.sql",
+    "18a": "18a.sql",
+    "18b": "18b.sql",
+    "18c": "18c.sql",
+    "19a": "19a.sql",
+    "19b": "19b.sql",
+    "19c": "19c.sql",
+    "19d": "19d.sql",
+    "20a": "20a.sql",
+    "20b": "20b.sql",
+    "20c": "20c.sql",
+    "21a": "21a.sql",
+    "21b": "21b.sql",
+    "21c": "21c.sql",
+    "22a": "22a.sql",
+    "22b": "22b.sql",
+    "22c": "22c.sql",
+    "22d": "22d.sql",
+    "23a": "23a.sql",
+    "23b": "23b.sql",
+    "23c": "23c.sql",
+    "24a": "24a.sql",
+    "24b": "24b.sql",
+    "25a": "25a.sql",
+    "25b": "25b.sql",
+    "25c": "25c.sql",
+    "26a": "26a.sql",
+    "26b": "26b.sql",
+    "26c": "26c.sql",
+    "27a": "27a.sql",
+    "27b": "27b.sql",
+    "27c": "27c.sql",
+    "30a": "30a.sql",
+    "30b": "30b.sql",
+    "30c": "30c.sql",
+    "31a": "31a.sql",
+    "31b": "31b.sql",
+    "31c": "31c.sql",
+    "32a": "32a.sql",
+    "32b": "32b.sql"
+  },
+  "timing": "One EXPLAIN ANALYZE per mode; cached plan executed again for correctness. No cold-cache guarantee.",
+  "source_manifest": {
+    "schema_repository": "https://github.com/gregrahn/join-order-benchmark",
+    "schema_commit": "a39603662e023e449cb2121997a5034df9e02ebf",
+    "data_source": "https://api.github.com/repos/duckdb/duckdb-data/releases/tags/v1.0",
+    "duckdb_version": "1.5.5",
+    "sources": {
+      "aka_name": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_aka_name.parquet",
+        "bytes": 51628048,
+        "sha256": "13c4e99c09f725f5b6c5d68caba093a3f3df7456084cfb4fdc88ed2db4791e8f"
+      },
+      "aka_title": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_aka_title.parquet",
+        "bytes": 24405144,
+        "sha256": "7576ca0f5d0438e2d3eedcf152f05f1280419bab222cacdf03283054d1c093ac"
+      },
+      "cast_info": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_cast_info.parquet",
+        "bytes": 422985311,
+        "sha256": "0f1f03df4bbae922dfa7a9cd1515e420ba1af1c39b3c8f69d307045ce151f741"
+      },
+      "char_name": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_char_name.parquet",
+        "bytes": 173945898,
+        "sha256": "8d99df0e254a609bff6bf656e8d64133cb330b2d138efe9e5cf397aaa429a42c"
+      },
+      "comp_cast_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_comp_cast_type.parquet",
+        "bytes": 2171,
+        "sha256": "5b4b986e03e5b107a47d1e719a0bd8fbb7530cdf2223b142743993cb9cbff619"
+      },
+      "company_name": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_company_name.parquet",
+        "bytes": 13916490,
+        "sha256": "a19428b68794f56ba2b56b85006802c5b6aa97aa67265a2921484e0ad2594c7f"
+      },
+      "company_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_company_type.parquet",
+        "bytes": 2311,
+        "sha256": "1e6e6c2ac5e4fec8c1365d481aad62bba46e2f037bee9e6a8826cfd623d4e8ea"
+      },
+      "complete_cast": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_complete_cast.parquet",
+        "bytes": 1525528,
+        "sha256": "5e1f6a0caa31f9e8b7f2010a93b7df0440f29fd4c6728ad8eb0a97d971bca0a0"
+      },
+      "info_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_info_type.parquet",
+        "bytes": 4297,
+        "sha256": "6c9bbafd4d93986393c1dc79124d35a35d4eb8ed3e82bd7420963df0db6381ba"
+      },
+      "keyword": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_keyword.parquet",
+        "bytes": 3092993,
+        "sha256": "1da4ea5d9afbf595988f3a50c98c1037d55920863599c46653e9db08c174f7f8"
+      },
+      "kind_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_kind_type.parquet",
+        "bytes": 2248,
+        "sha256": "d27c302c44b456974c05db79c2dd2f43efcdeac3742ffd2158e633ed9c7c26e6"
+      },
+      "link_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_link_type.parquet",
+        "bytes": 2521,
+        "sha256": "2cb2aad5b765ef8a680ea9e4a5868bb89622f39963f2650ef5b446208cdb3da6"
+      },
+      "movie_companies": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_movie_companies.parquet",
+        "bytes": 33752547,
+        "sha256": "20e762d8a9aca841816c2aba081ff15cd895a95e89785323952ad9800b819e92"
+      },
+      "movie_info": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_movie_info.parquet",
+        "bytes": 461425014,
+        "sha256": "b62d0b53af3d81075c673dd0a81bd2cd5a75f14b6caa81bbc33e1c626de2366b"
+      },
+      "movie_info_idx": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_movie_info_idx.parquet",
+        "bytes": 14914871,
+        "sha256": "5aa34827e6139f73d3cacde4333571d0d41a7183949f8ff385022da9bd6dd729"
+      },
+      "movie_keyword": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_movie_keyword.parquet",
+        "bytes": 33112818,
+        "sha256": "f47acd59c6847eb3adf3b7acd199a8bbdc0cb966853a45e3d8126bd302e0b291"
+      },
+      "movie_link": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_movie_link.parquet",
+        "bytes": 356443,
+        "sha256": "2c0e0979e249c66662bdefaf5e328b7f35f2394530406577a9ff4daefea296af"
+      },
+      "name": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_name.parquet",
+        "bytes": 218580214,
+        "sha256": "2c909f3c89259247bbe1b05c51ff46f9e3ea491489dd8da0d1c625314732d577"
+      },
+      "person_info": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_person_info.parquet",
+        "bytes": 235261014,
+        "sha256": "4864b369d1b0f89933ae324abf5bc3be8bcc2a6c462b64fce5f3e4adae3ba5b2"
+      },
+      "role_type": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_role_type.parquet",
+        "bytes": 2347,
+        "sha256": "e9038cb4b9da0d7d49a910c8db42125daaedcea02c573a9a9b79d4f548349885"
+      },
+      "title": {
+        "url": "https://github.com/duckdb/duckdb-data/releases/download/v1.0/job_title.parquet",
+        "bytes": 144897832,
+        "sha256": "037b82f254723aa285668b18c87387ec59d34ae1cd25731c6fdb51280a0dbbcf"
+      }
+    },
+    "sample_rule": "title.id % 503 = 0; all seed movie facts; referenced dimensions, people facts, linked titles and episode ancestors",
+    "seed_titles": 5026,
+    "rows": {
+      "aka_name": 51197,
+      "aka_title": 691,
+      "cast_info": 71914,
+      "char_name": 22382,
+      "comp_cast_type": 4,
+      "company_name": 3118,
+      "company_type": 4,
+      "complete_cast": 255,
+      "info_type": 113,
+      "keyword": 4610,
+      "kind_type": 7,
+      "link_type": 18,
+      "movie_companies": 5122,
+      "movie_info": 28567,
+      "movie_info_idx": 2721,
+      "movie_keyword": 8550,
+      "movie_link": 44,
+      "name": 58214,
+      "person_info": 349836,
+      "role_type": 12,
+      "title": 7700
+    },
+    "logical_references_checked": 27,
+    "warning": "Real JOB sample, not the full benchmark. Reference-only titles lack movie facts; many selective JOB queries may return NULL.",
+    "download_cache_removed": true,
+    "native_queries_passed": 113,
+    "native_queries_with_nonnull_results": 31,
+    "postgres_database_size_at_verification": "114 MB"
+  },
+  "import_report": null,
+  "attempted_queries": 113,
+  "completed_queries": 113,
+  "omitted_queries": 9,
+  "results_policy": "Only successful, matching comparisons are retained.",
+  "retried_queries": [
+    "13d",
+    "24a"
+  ],
+  "retry_note": "Two transport failures were retried once; both plans and timings for those queries come from the successful retry."
+}

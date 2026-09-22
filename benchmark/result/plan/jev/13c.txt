@@ -1,0 +1,113 @@
+Query 13c: 13c.sql
+Planner: jev (live; jev.enabled=on)
+
+SELECT MIN(cn.name) AS producing_company,
+       MIN(miidx.info) AS rating,
+       MIN(t.title) AS movie_about_winning
+FROM company_name AS cn,
+     company_type AS ct,
+     info_type AS it,
+     info_type AS it2,
+     kind_type AS kt,
+     movie_companies AS mc,
+     movie_info AS mi,
+     movie_info_idx AS miidx,
+     title AS t
+WHERE cn.country_code ='[us]'
+  AND ct.kind ='production companies'
+  AND it.info ='rating'
+  AND it2.info ='release dates'
+  AND kt.kind ='movie'
+  AND t.title != ''
+  AND (t.title LIKE 'Champion%'
+       OR t.title LIKE 'Loser%')
+  AND mi.movie_id = t.id
+  AND it2.id = mi.info_type_id
+  AND kt.id = t.kind_id
+  AND mc.movie_id = t.id
+  AND cn.id = mc.company_id
+  AND ct.id = mc.company_type_id
+  AND miidx.movie_id = t.id
+  AND it.id = miidx.info_type_id
+  AND mi.movie_id = miidx.movie_id
+  AND mi.movie_id = mc.movie_id
+  AND miidx.movie_id = mc.movie_id;
+
+Aggregate  (cost=283.28..283.29 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(cn.name), min(miidx.info), min(t.title)
+  Buffers: shared hit=115
+  ->  Nested Loop  (cost=5.18..283.28 rows=1 width=42) (actual rows=0.00 loops=1)
+        Output: cn.name, miidx.info, t.title
+        Join Filter: ((it2.id = mi.info_type_id) AND (kt.id = t.kind_id) AND (ct.id = mc.company_type_id) AND (it.id = miidx.info_type_id))
+        Buffers: shared hit=115
+        ->  Nested Loop  (cost=0.00..6.99 rows=1 width=16) (actual rows=1.00 loops=1)
+              Output: ct.id, kt.id, it.id, it2.id
+              Buffers: shared hit=4
+              ->  Nested Loop  (cost=0.00..2.15 rows=1 width=8) (actual rows=1.00 loops=1)
+                    Output: ct.id, kt.id
+                    Buffers: shared hit=2
+                    ->  Seq Scan on public.company_type ct  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: ct.id, ct.kind
+                          Filter: ((ct.kind)::text = 'production companies'::text)
+                          Rows Removed by Filter: 3
+                          Buffers: shared hit=1
+                    ->  Seq Scan on public.kind_type kt  (cost=0.00..1.09 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: kt.id, kt.kind
+                          Filter: ((kt.kind)::text = 'movie'::text)
+                          Rows Removed by Filter: 6
+                          Buffers: shared hit=1
+              ->  Nested Loop  (cost=0.00..4.83 rows=1 width=8) (actual rows=1.00 loops=1)
+                    Output: it.id, it2.id
+                    Buffers: shared hit=2
+                    ->  Seq Scan on public.info_type it  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: it.id, it.info
+                          Filter: ((it.info)::text = 'rating'::text)
+                          Rows Removed by Filter: 112
+                          Buffers: shared hit=1
+                    ->  Seq Scan on public.info_type it2  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                          Output: it2.id, it2.info
+                          Filter: ((it2.info)::text = 'release dates'::text)
+                          Rows Removed by Filter: 112
+                          Buffers: shared hit=1
+        ->  Nested Loop  (cost=5.18..276.22 rows=3 width=58) (actual rows=0.00 loops=1)
+              Output: cn.name, mc.company_type_id, miidx.info, miidx.info_type_id, mi.info_type_id, t.title, t.kind_id
+              Inner Unique: true
+              Buffers: shared hit=111
+              ->  Nested Loop  (cost=4.90..273.84 rows=7 width=42) (actual rows=0.00 loops=1)
+                    Output: mc.company_id, mc.company_type_id, miidx.info, miidx.info_type_id, mi.info_type_id, t.title, t.kind_id
+                    Buffers: shared hit=111
+                    ->  Nested Loop  (cost=4.61..273.15 rows=2 width=46) (actual rows=0.00 loops=1)
+                          Output: miidx.info, miidx.movie_id, miidx.info_type_id, mi.movie_id, mi.info_type_id, t.title, t.id, t.kind_id
+                          Buffers: shared hit=111
+                          ->  Nested Loop  (cost=4.33..271.69 rows=4 width=33) (actual rows=0.00 loops=1)
+                                Output: mi.movie_id, mi.info_type_id, t.title, t.id, t.kind_id
+                                Buffers: shared hit=111
+                                ->  Seq Scan on public.title t  (cost=0.00..245.75 rows=1 width=25) (actual rows=0.00 loops=1)
+                                      Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                      Filter: ((t.title <> ''::text) AND ((t.title ~~ 'Champion%'::text) OR (t.title ~~ 'Loser%'::text)))
+                                      Rows Removed by Filter: 7700
+                                      Buffers: shared hit=111
+                                ->  Bitmap Heap Scan on public.movie_info mi  (cost=4.33..25.88 rows=6 width=8) (never executed)
+                                      Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                                      Recheck Cond: (mi.movie_id = t.id)
+                                      ->  Bitmap Index Scan on movie_id_movie_info  (cost=0.00..4.33 rows=6 width=0) (never executed)
+                                            Index Cond: (mi.movie_id = t.id)
+                                            Index Searches: 0
+                          ->  Index Scan using movie_id_movie_info_idx on public.movie_info_idx miidx  (cost=0.28..0.34 rows=3 width=13) (never executed)
+                                Output: miidx.id, miidx.movie_id, miidx.info_type_id, miidx.info, miidx.note
+                                Index Cond: (miidx.movie_id = mi.movie_id)
+                                Index Searches: 0
+                    ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.32 rows=2 width=12) (never executed)
+                          Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                          Index Cond: (mc.movie_id = mi.movie_id)
+                          Index Searches: 0
+              ->  Index Scan using company_name_pkey on public.company_name cn  (cost=0.28..0.34 rows=1 width=24) (never executed)
+                    Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+                    Index Cond: (cn.id = mc.company_id)
+                    Filter: ((cn.country_code)::text = '[us]'::text)
+                    Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=90
+Planning Time: 6802.477 ms
+Execution Time: 1.540 ms

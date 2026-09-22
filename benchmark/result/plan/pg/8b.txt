@@ -1,0 +1,103 @@
+Query 8b: 8b.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(an.name) AS acress_pseudonym,
+       MIN(t.title) AS japanese_anime_movie
+FROM aka_name AS an,
+     cast_info AS ci,
+     company_name AS cn,
+     movie_companies AS mc,
+     name AS n,
+     role_type AS rt,
+     title AS t
+WHERE ci.note ='(voice: English version)'
+  AND cn.country_code ='[jp]'
+  AND mc.note LIKE '%(Japan)%'
+  AND mc.note NOT LIKE '%(USA)%'
+  AND (mc.note LIKE '%(2006)%'
+       OR mc.note LIKE '%(2007)%')
+  AND n.name LIKE '%Yo%'
+  AND n.name NOT LIKE '%Yu%'
+  AND rt.role ='actress'
+  AND t.production_year BETWEEN 2006 AND 2007
+  AND (t.title LIKE 'One Piece%'
+       OR t.title LIKE 'Dragon Ball Z%')
+  AND an.person_id = n.id
+  AND n.id = ci.person_id
+  AND ci.movie_id = t.id
+  AND t.id = mc.movie_id
+  AND mc.company_id = cn.id
+  AND ci.role_id = rt.id
+  AND an.person_id = ci.person_id
+  AND ci.movie_id = mc.movie_id;
+
+Aggregate  (cost=236.87..236.88 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(an.name), min(t.title)
+  Buffers: shared hit=560
+  ->  Nested Loop  (cost=5.56..236.86 rows=1 width=33) (actual rows=0.00 loops=1)
+        Output: an.name, t.title
+        Inner Unique: true
+        Buffers: shared hit=560
+        ->  Nested Loop  (cost=5.28..230.28 rows=1 width=24) (actual rows=0.00 loops=1)
+              Output: an.name, ci.movie_id, mc.movie_id
+              Inner Unique: true
+              Join Filter: (ci.role_id = rt.id)
+              Buffers: shared hit=560
+              ->  Nested Loop  (cost=5.28..229.12 rows=1 width=28) (actual rows=0.00 loops=1)
+                    Output: an.name, ci.movie_id, ci.role_id, mc.movie_id
+                    Inner Unique: true
+                    Buffers: shared hit=560
+                    ->  Nested Loop  (cost=4.99..228.73 rows=1 width=36) (actual rows=0.00 loops=1)
+                          Output: an.name, an.person_id, ci.person_id, ci.movie_id, ci.role_id, mc.movie_id
+                          Buffers: shared hit=560
+                          ->  Nested Loop  (cost=4.70..219.43 rows=1 width=16) (actual rows=0.00 loops=1)
+                                Output: ci.person_id, ci.movie_id, ci.role_id, mc.movie_id
+                                Buffers: shared hit=560
+                                ->  Nested Loop  (cost=0.28..156.15 rows=1 width=4) (actual rows=14.00 loops=1)
+                                      Output: mc.movie_id
+                                      Inner Unique: true
+                                      Buffers: shared hit=79
+                                      ->  Seq Scan on public.movie_companies mc  (cost=0.00..139.44 rows=2 width=8) (actual rows=14.00 loops=1)
+                                            Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                            Filter: ((mc.note ~~ '%(Japan)%'::text) AND (mc.note !~~ '%(USA)%'::text) AND ((mc.note ~~ '%(2006)%'::text) OR (mc.note ~~ '%(2007)%'::text)))
+                                            Rows Removed by Filter: 5108
+                                            Buffers: shared hit=37
+                                      ->  Index Scan using company_name_pkey on public.company_name cn  (cost=0.28..8.30 rows=1 width=4) (actual rows=1.00 loops=14)
+                                            Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+                                            Index Cond: (cn.id = mc.company_id)
+                                            Filter: ((cn.country_code)::text = '[jp]'::text)
+                                            Index Searches: 14
+                                            Buffers: shared hit=42
+                                ->  Bitmap Heap Scan on public.cast_info ci  (cost=4.42..63.27 rows=1 width=12) (actual rows=0.00 loops=14)
+                                      Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                      Recheck Cond: (ci.movie_id = mc.movie_id)
+                                      Filter: (ci.note = '(voice: English version)'::text)
+                                      Rows Removed by Filter: 34
+                                      Heap Blocks: exact=453
+                                      Buffers: shared hit=481
+                                      ->  Bitmap Index Scan on movie_id_cast_info  (cost=0.00..4.42 rows=17 width=0) (actual rows=34.29 loops=14)
+                                            Index Cond: (ci.movie_id = mc.movie_id)
+                                            Index Searches: 14
+                                            Buffers: shared hit=28
+                          ->  Index Scan using person_id_aka_name on public.aka_name an  (cost=0.29..9.28 rows=2 width=20) (never executed)
+                                Output: an.id, an.person_id, an.name, an.imdb_index, an.name_pcode_cf, an.name_pcode_nf, an.surname_pcode, an.md5sum
+                                Index Cond: (an.person_id = ci.person_id)
+                                Index Searches: 0
+                    ->  Index Scan using name_pkey on public.name n  (cost=0.29..0.39 rows=1 width=4) (never executed)
+                          Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+                          Index Cond: (n.id = an.person_id)
+                          Filter: ((n.name ~~ '%Yo%'::text) AND (n.name !~~ '%Yu%'::text))
+                          Index Searches: 0
+              ->  Seq Scan on public.role_type rt  (cost=0.00..1.15 rows=1 width=4) (never executed)
+                    Output: rt.id, rt.role
+                    Filter: ((rt.role)::text = 'actress'::text)
+        ->  Index Scan using title_pkey on public.title t  (cost=0.28..3.43 rows=1 width=21) (never executed)
+              Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+              Index Cond: (t.id = ci.movie_id)
+              Filter: ((t.production_year >= 2006) AND (t.production_year <= 2007) AND ((t.title ~~ 'One Piece%'::text) OR (t.title ~~ 'Dragon Ball Z%'::text)))
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=88
+Planning Time: 2.058 ms
+Execution Time: 1.390 ms

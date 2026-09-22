@@ -1,0 +1,114 @@
+Query 18b: 18b.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(mi.info) AS movie_budget,
+       MIN(mi_idx.info) AS movie_votes,
+       MIN(t.title) AS movie_title
+FROM cast_info AS ci,
+     info_type AS it1,
+     info_type AS it2,
+     movie_info AS mi,
+     movie_info_idx AS mi_idx,
+     name AS n,
+     title AS t
+WHERE ci.note IN ('(writer)',
+                  '(head writer)',
+                  '(written by)',
+                  '(story)',
+                  '(story editor)')
+  AND it1.info = 'genres'
+  AND it2.info = 'rating'
+  AND mi.info IN ('Horror',
+                  'Thriller')
+  AND mi.note IS NULL
+  AND mi_idx.info > '8.0'
+  AND n.gender IS NOT NULL
+  AND n.gender = 'f'
+  AND t.production_year BETWEEN 2008 AND 2014
+  AND t.id = mi.movie_id
+  AND t.id = mi_idx.movie_id
+  AND t.id = ci.movie_id
+  AND ci.movie_id = mi.movie_id
+  AND ci.movie_id = mi_idx.movie_id
+  AND mi.movie_id = mi_idx.movie_id
+  AND n.id = ci.person_id
+  AND it1.id = mi.info_type_id
+  AND it2.id = mi_idx.info_type_id;
+
+Aggregate  (cost=56.58..56.59 rows=1 width=96) (actual rows=1.00 loops=1)
+  Output: min(mi.info), min(mi_idx.info), min(t.title)
+  Buffers: shared hit=654
+  ->  Nested Loop  (cost=16.38..56.57 rows=1 width=61) (actual rows=0.00 loops=1)
+        Output: mi.info, mi_idx.info, t.title
+        Inner Unique: true
+        Buffers: shared hit=654
+        ->  Nested Loop  (cost=16.09..54.72 rows=1 width=65) (actual rows=0.00 loops=1)
+              Output: ci.person_id, mi.info, mi_idx.info, t.title
+              Inner Unique: true
+              Buffers: shared hit=654
+              ->  Nested Loop  (cost=15.95..54.38 rows=1 width=69) (actual rows=0.00 loops=1)
+                    Output: ci.person_id, mi.info, mi.info_type_id, mi_idx.info, t.title
+                    Join Filter: (mi.movie_id = t.id)
+                    Buffers: shared hit=654
+                    ->  Nested Loop  (cost=15.66..53.41 rows=1 width=38) (actual rows=14.00 loops=1)
+                          Output: ci.movie_id, ci.person_id, mi_idx.info, mi_idx.movie_id, t.title, t.id
+                          Buffers: shared hit=508
+                          ->  Nested Loop  (cost=15.37..51.66 rows=1 width=30) (actual rows=10.00 loops=1)
+                                Output: mi_idx.info, mi_idx.movie_id, t.title, t.id
+                                Inner Unique: true
+                                Buffers: shared hit=86
+                                ->  Nested Loop  (cost=15.09..47.40 rows=1 width=9) (actual rows=22.00 loops=1)
+                                      Output: mi_idx.info, mi_idx.movie_id
+                                      Buffers: shared hit=20
+                                      ->  Seq Scan on public.info_type it2  (cost=0.00..2.41 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: it2.id, it2.info
+                                            Filter: ((it2.info)::text = 'rating'::text)
+                                            Rows Removed by Filter: 112
+                                            Buffers: shared hit=1
+                                      ->  Bitmap Heap Scan on public.movie_info_idx mi_idx  (cost=15.09..44.69 rows=29 width=13) (actual rows=22.00 loops=1)
+                                            Output: mi_idx.id, mi_idx.movie_id, mi_idx.info_type_id, mi_idx.info, mi_idx.note
+                                            Recheck Cond: (it2.id = mi_idx.info_type_id)
+                                            Filter: (mi_idx.info > '8.0'::text)
+                                            Rows Removed by Filter: 885
+                                            Heap Blocks: exact=16
+                                            Buffers: shared hit=19
+                                            ->  Bitmap Index Scan on info_type_id_movie_info_idx  (cost=0.00..15.08 rows=907 width=0) (actual rows=907.00 loops=1)
+                                                  Index Cond: (mi_idx.info_type_id = it2.id)
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=3
+                                ->  Index Scan using title_pkey on public.title t  (cost=0.28..4.26 rows=1 width=21) (actual rows=0.45 loops=22)
+                                      Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                      Index Cond: (t.id = mi_idx.movie_id)
+                                      Filter: ((t.production_year >= 2008) AND (t.production_year <= 2014))
+                                      Rows Removed by Filter: 1
+                                      Index Searches: 22
+                                      Buffers: shared hit=66
+                          ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..1.74 rows=1 width=8) (actual rows=1.40 loops=10)
+                                Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                                Index Cond: (ci.movie_id = t.id)
+                                Filter: (ci.note = ANY ('{(writer),"(head writer)","(written by)",(story),"(story editor)"}'::text[]))
+                                Rows Removed by Filter: 43
+                                Index Searches: 10
+                                Buffers: shared hit=422
+                    ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.29..0.95 rows=1 width=47) (actual rows=0.00 loops=14)
+                          Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                          Index Cond: (mi.movie_id = ci.movie_id)
+                          Filter: ((mi.note IS NULL) AND (mi.info = ANY ('{Horror,Thriller}'::text[])))
+                          Rows Removed by Filter: 17
+                          Index Searches: 14
+                          Buffers: shared hit=146
+              ->  Index Scan using info_type_pkey on public.info_type it1  (cost=0.14..0.24 rows=1 width=4) (never executed)
+                    Output: it1.id, it1.info
+                    Index Cond: (it1.id = mi.info_type_id)
+                    Filter: ((it1.info)::text = 'genres'::text)
+                    Index Searches: 0
+        ->  Index Scan using name_pkey on public.name n  (cost=0.29..1.85 rows=1 width=4) (never executed)
+              Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+              Index Cond: (n.id = ci.person_id)
+              Filter: ((n.gender IS NOT NULL) AND ((n.gender)::text = 'f'::text))
+              Index Searches: 0
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=84
+Planning Time: 1.090 ms
+Execution Time: 0.584 ms

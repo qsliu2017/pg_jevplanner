@@ -1,0 +1,98 @@
+Query 17a: 17a.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(n.name) AS member_in_charnamed_american_movie,
+       MIN(n.name) AS a1
+FROM cast_info AS ci,
+     company_name AS cn,
+     keyword AS k,
+     movie_companies AS mc,
+     movie_keyword AS mk,
+     name AS n,
+     title AS t
+WHERE cn.country_code ='[us]'
+  AND k.keyword ='character-name-in-title'
+  AND n.name LIKE 'B%'
+  AND n.id = ci.person_id
+  AND ci.movie_id = t.id
+  AND t.id = mk.movie_id
+  AND mk.keyword_id = k.id
+  AND t.id = mc.movie_id
+  AND mc.company_id = cn.id
+  AND ci.movie_id = mc.movie_id
+  AND ci.movie_id = mk.movie_id
+  AND mc.movie_id = mk.movie_id;
+
+Aggregate  (cost=121.03..121.04 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min(n.name), min(n.name)
+  Buffers: shared hit=28195
+  ->  Nested Loop  (cost=5.73..121.02 rows=3 width=15) (actual rows=669.00 loops=1)
+        Output: n.name
+        Inner Unique: true
+        Buffers: shared hit=28195
+        ->  Nested Loop  (cost=5.44..109.76 rows=31 width=4) (actual rows=6756.00 loops=1)
+              Output: ci.person_id
+              Buffers: shared hit=7927
+              ->  Nested Loop  (cost=5.15..105.52 rows=4 width=12) (actual rows=161.00 loops=1)
+                    Output: mc.movie_id, mk.movie_id, t.id
+                    Inner Unique: true
+                    Buffers: shared hit=1531
+                    ->  Nested Loop  (cost=4.87..101.09 rows=13 width=16) (actual rows=328.00 loops=1)
+                          Output: mk.movie_id, mc.movie_id, mc.company_id, t.id
+                          Buffers: shared hit=547
+                          ->  Nested Loop  (cost=4.58..100.37 rows=2 width=8) (actual rows=87.00 loops=1)
+                                Output: mk.movie_id, t.id
+                                Inner Unique: true
+                                Buffers: shared hit=246
+                                ->  Nested Loop  (cost=4.30..99.75 rows=2 width=4) (actual rows=87.00 loops=1)
+                                      Output: mk.movie_id
+                                      Buffers: shared hit=71
+                                      ->  Seq Scan on public.keyword k  (cost=0.00..88.62 rows=1 width=4) (actual rows=1.00 loops=1)
+                                            Output: k.id, k.keyword, k.phonetic_code
+                                            Filter: (k.keyword = 'character-name-in-title'::text)
+                                            Rows Removed by Filter: 4609
+                                            Buffers: shared hit=31
+                                      ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (actual rows=87.00 loops=1)
+                                            Output: mk.id, mk.movie_id, mk.keyword_id
+                                            Recheck Cond: (k.id = mk.keyword_id)
+                                            Heap Blocks: exact=38
+                                            Buffers: shared hit=40
+                                            ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (actual rows=87.00 loops=1)
+                                                  Index Cond: (mk.keyword_id = k.id)
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=2
+                                ->  Index Only Scan using title_pkey on public.title t  (cost=0.28..0.31 rows=1 width=4) (actual rows=1.00 loops=87)
+                                      Output: t.id
+                                      Index Cond: (t.id = mk.movie_id)
+                                      Heap Fetches: 0
+                                      Index Searches: 87
+                                      Buffers: shared hit=175
+                          ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.34 rows=2 width=8) (actual rows=3.77 loops=87)
+                                Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                Index Cond: (mc.movie_id = t.id)
+                                Index Searches: 87
+                                Buffers: shared hit=301
+                    ->  Index Scan using company_name_pkey on public.company_name cn  (cost=0.28..0.34 rows=1 width=4) (actual rows=0.49 loops=328)
+                          Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+                          Index Cond: (cn.id = mc.company_id)
+                          Filter: ((cn.country_code)::text = '[us]'::text)
+                          Rows Removed by Filter: 1
+                          Index Searches: 328
+                          Buffers: shared hit=984
+              ->  Index Scan using movie_id_cast_info on public.cast_info ci  (cost=0.29..0.89 rows=17 width=8) (actual rows=41.96 loops=161)
+                    Output: ci.id, ci.person_id, ci.movie_id, ci.person_role_id, ci.note, ci.nr_order, ci.role_id
+                    Index Cond: (ci.movie_id = t.id)
+                    Index Searches: 161
+                    Buffers: shared hit=6396
+        ->  Index Scan using name_pkey on public.name n  (cost=0.29..0.36 rows=1 width=19) (actual rows=0.10 loops=6756)
+              Output: n.id, n.name, n.imdb_index, n.imdb_id, n.gender, n.name_pcode_cf, n.name_pcode_nf, n.surname_pcode, n.md5sum
+              Index Cond: (n.id = ci.person_id)
+              Filter: (n.name ~~ 'B%'::text)
+              Rows Removed by Filter: 1
+              Index Searches: 6756
+              Buffers: shared hit=20268
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=108
+Planning Time: 1.746 ms
+Execution Time: 11.944 ms

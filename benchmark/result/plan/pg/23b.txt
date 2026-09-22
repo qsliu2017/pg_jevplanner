@@ -1,0 +1,147 @@
+Query 23b: 23b.sql
+Planner: pg (jev.enabled=off)
+
+SELECT MIN(kt.kind) AS movie_kind,
+       MIN(t.title) AS complete_nerdy_internet_movie
+FROM complete_cast AS cc,
+     comp_cast_type AS cct1,
+     company_name AS cn,
+     company_type AS ct,
+     info_type AS it1,
+     keyword AS k,
+     kind_type AS kt,
+     movie_companies AS mc,
+     movie_info AS mi,
+     movie_keyword AS mk,
+     title AS t
+WHERE cct1.kind = 'complete+verified'
+  AND cn.country_code = '[us]'
+  AND it1.info = 'release dates'
+  AND k.keyword IN ('nerd',
+                    'loner',
+                    'alienation',
+                    'dignity')
+  AND kt.kind IN ('movie')
+  AND mi.note LIKE '%internet%'
+  AND mi.info LIKE 'USA:% 200%'
+  AND t.production_year > 2000
+  AND kt.id = t.kind_id
+  AND t.id = mi.movie_id
+  AND t.id = mk.movie_id
+  AND t.id = mc.movie_id
+  AND t.id = cc.movie_id
+  AND mk.movie_id = mi.movie_id
+  AND mk.movie_id = mc.movie_id
+  AND mk.movie_id = cc.movie_id
+  AND mi.movie_id = mc.movie_id
+  AND mi.movie_id = cc.movie_id
+  AND mc.movie_id = cc.movie_id
+  AND k.id = mk.keyword_id
+  AND it1.id = mi.info_type_id
+  AND cn.id = mc.company_id
+  AND ct.id = mc.company_type_id
+  AND cct1.id = cc.status_id;
+
+Aggregate  (cost=153.23..153.24 rows=1 width=64) (actual rows=1.00 loops=1)
+  Output: min((kt.kind)::text), min(t.title)
+  Buffers: shared hit=50
+  ->  Nested Loop  (cost=5.58..153.22 rows=1 width=27) (actual rows=0.00 loops=1)
+        Output: kt.kind, t.title
+        Inner Unique: true
+        Join Filter: (kt.id = t.kind_id)
+        Buffers: shared hit=50
+        ->  Nested Loop  (cost=5.58..152.12 rows=1 width=21) (actual rows=0.00 loops=1)
+              Output: t.title, t.kind_id
+              Inner Unique: true
+              Join Filter: (it1.id = mi.info_type_id)
+              Buffers: shared hit=50
+              ->  Nested Loop  (cost=5.58..149.70 rows=1 width=25) (actual rows=0.00 loops=1)
+                    Output: mi.info_type_id, t.title, t.kind_id
+                    Join Filter: (mi.movie_id = t.id)
+                    Buffers: shared hit=50
+                    ->  Nested Loop  (cost=5.29..149.10 rows=1 width=37) (actual rows=0.00 loops=1)
+                          Output: cc.movie_id, mc.movie_id, mk.movie_id, t.title, t.kind_id, t.id
+                          Inner Unique: true
+                          Join Filter: (ct.id = mc.company_type_id)
+                          Buffers: shared hit=50
+                          ->  Nested Loop  (cost=5.29..148.01 rows=1 width=41) (actual rows=0.00 loops=1)
+                                Output: cc.movie_id, mc.movie_id, mc.company_type_id, mk.movie_id, t.title, t.kind_id, t.id
+                                Inner Unique: true
+                                Buffers: shared hit=50
+                                ->  Nested Loop  (cost=5.01..147.67 rows=1 width=45) (actual rows=0.00 loops=1)
+                                      Output: cc.movie_id, mc.movie_id, mc.company_id, mc.company_type_id, mk.movie_id, t.title, t.kind_id, t.id
+                                      Join Filter: (mc.movie_id = t.id)
+                                      Buffers: shared hit=50
+                                      ->  Nested Loop  (cost=4.73..147.31 rows=1 width=33) (actual rows=0.00 loops=1)
+                                            Output: cc.movie_id, mk.movie_id, t.title, t.kind_id, t.id
+                                            Inner Unique: true
+                                            Buffers: shared hit=50
+                                            ->  Nested Loop  (cost=4.45..146.94 rows=1 width=8) (actual rows=1.00 loops=1)
+                                                  Output: cc.movie_id, mk.movie_id
+                                                  Join Filter: (cct1.id = cc.status_id)
+                                                  Rows Removed by Join Filter: 2
+                                                  Buffers: shared hit=47
+                                                  ->  Seq Scan on public.comp_cast_type cct1  (cost=0.00..1.05 rows=1 width=4) (actual rows=1.00 loops=1)
+                                                        Output: cct1.id, cct1.kind
+                                                        Filter: ((cct1.kind)::text = 'complete+verified'::text)
+                                                        Rows Removed by Filter: 3
+                                                        Buffers: shared hit=1
+                                                  ->  Nested Loop  (cost=4.45..145.85 rows=3 width=12) (actual rows=3.00 loops=1)
+                                                        Output: cc.movie_id, cc.status_id, mk.movie_id
+                                                        Buffers: shared hit=46
+                                                        ->  Nested Loop  (cost=4.30..144.63 rows=7 width=4) (actual rows=3.00 loops=1)
+                                                              Output: mk.movie_id
+                                                              Buffers: shared hit=40
+                                                              ->  Seq Scan on public.keyword k  (cost=0.00..100.15 rows=4 width=4) (actual rows=3.00 loops=1)
+                                                                    Output: k.id, k.keyword, k.phonetic_code
+                                                                    Filter: (k.keyword = ANY ('{nerd,loner,alienation,dignity}'::text[]))
+                                                                    Rows Removed by Filter: 4607
+                                                                    Buffers: shared hit=31
+                                                              ->  Bitmap Heap Scan on public.movie_keyword mk  (cost=4.30..11.10 rows=2 width=8) (actual rows=1.00 loops=3)
+                                                                    Output: mk.id, mk.movie_id, mk.keyword_id
+                                                                    Recheck Cond: (k.id = mk.keyword_id)
+                                                                    Heap Blocks: exact=3
+                                                                    Buffers: shared hit=9
+                                                                    ->  Bitmap Index Scan on keyword_id_movie_keyword  (cost=0.00..4.30 rows=2 width=0) (actual rows=1.00 loops=3)
+                                                                          Index Cond: (mk.keyword_id = k.id)
+                                                                          Index Searches: 3
+                                                                          Buffers: shared hit=6
+                                                        ->  Index Scan using movie_id_complete_cast on public.complete_cast cc  (cost=0.14..0.16 rows=1 width=8) (actual rows=1.00 loops=3)
+                                                              Output: cc.id, cc.movie_id, cc.subject_id, cc.status_id
+                                                              Index Cond: (cc.movie_id = mk.movie_id)
+                                                              Index Searches: 3
+                                                              Buffers: shared hit=6
+                                            ->  Index Scan using title_pkey on public.title t  (cost=0.28..0.37 rows=1 width=25) (actual rows=0.00 loops=1)
+                                                  Output: t.id, t.title, t.imdb_index, t.kind_id, t.production_year, t.imdb_id, t.phonetic_code, t.episode_of_id, t.season_nr, t.episode_nr, t.series_years, t.md5sum
+                                                  Index Cond: (t.id = mk.movie_id)
+                                                  Filter: (t.production_year > 2000)
+                                                  Rows Removed by Filter: 1
+                                                  Index Searches: 1
+                                                  Buffers: shared hit=3
+                                      ->  Index Scan using movie_id_movie_companies on public.movie_companies mc  (cost=0.28..0.34 rows=2 width=12) (never executed)
+                                            Output: mc.id, mc.movie_id, mc.company_id, mc.company_type_id, mc.note
+                                            Index Cond: (mc.movie_id = mk.movie_id)
+                                            Index Searches: 0
+                                ->  Index Scan using company_name_pkey on public.company_name cn  (cost=0.28..0.34 rows=1 width=4) (never executed)
+                                      Output: cn.id, cn.name, cn.country_code, cn.imdb_id, cn.name_pcode_nf, cn.name_pcode_sf, cn.md5sum
+                                      Index Cond: (cn.id = mc.company_id)
+                                      Filter: ((cn.country_code)::text = '[us]'::text)
+                                      Index Searches: 0
+                          ->  Seq Scan on public.company_type ct  (cost=0.00..1.04 rows=4 width=4) (never executed)
+                                Output: ct.id, ct.kind
+                    ->  Index Scan using movie_id_movie_info on public.movie_info mi  (cost=0.29..0.58 rows=1 width=8) (never executed)
+                          Output: mi.id, mi.movie_id, mi.info_type_id, mi.info, mi.note
+                          Index Cond: (mi.movie_id = mk.movie_id)
+                          Filter: ((mi.note ~~ '%internet%'::text) AND (mi.info ~~ 'USA:% 200%'::text))
+                          Index Searches: 0
+              ->  Seq Scan on public.info_type it1  (cost=0.00..2.41 rows=1 width=4) (never executed)
+                    Output: it1.id, it1.info
+                    Filter: ((it1.info)::text = 'release dates'::text)
+        ->  Seq Scan on public.kind_type kt  (cost=0.00..1.09 rows=1 width=14) (never executed)
+              Output: kt.id, kt.kind
+              Filter: ((kt.kind)::text = 'movie'::text)
+Settings: max_parallel_workers_per_gather = '0', geqo = 'off', enable_incremental_sort = 'off', jit = 'off', plan_cache_mode = 'force_generic_plan', search_path = 'public, pg_catalog'
+Planning:
+  Buffers: shared hit=135
+Planning Time: 21.020 ms
+Execution Time: 0.738 ms
